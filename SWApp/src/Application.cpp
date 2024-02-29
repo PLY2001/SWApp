@@ -6,19 +6,21 @@
 
 namespace MyApp {
 
-	//必须使用CComPtr来定义智能指针
+	//必须使用CComPtr来定义智能指针，从而简化COM指针的操作，比如自动计数
 	CComPtr<ISldWorks> swApp;// COM Pointer of Soldiworks object
 	CComPtr<IModelDoc2> swDoc;// COM Pointer of Soldiworks Model Document
-	CComPtr<ISelectionMgr> swSelectionManager;//选择物体
-	CComPtr<IDispatch> swDispatch;//所有东西的父类
-	CComPtr<IDimXpertManager> swDimXpert;//MBD
-	CComPtr<IAnnotation> swAnnotation;//标注
+	CComPtr<IDispatch> swDispatch;//所有接口的父类(等效于C#的object)
+	CComPtr<IConfiguration> swConfiguration;//用于获取DimXpertManager
+	CComPtr<IDimXpertManager> swDimXpertManager;//管理DimXpert的一切数据
+	CComPtr<IDimXpertPart> swDimXpertPart;//DimXpert零件
+	CComPtr<IDimXpertFeature> swDimXpertFeature;//DimXpert特征
+	CComPtr<IDimXpertAnnotation> swDimXpertAnnotation;//DimXpert标注
+	VARIANT dimXpertAnnotationVT;//获取DimXpert标注的SAFEARRAY数组的载体
 
-	HRESULT result = NOERROR; //存储函数的输出结果		
+	HRESULT result = NOERROR; //存储函数的输出结果
+	
 	//CComBSTR _messageToUser;// COM Style String for message to user
 	//long _lMessageResult;// long type variable to store the result value by user
-
-	
 
 	void MyApplication::ShowMyApp()
     {
@@ -26,21 +28,11 @@ namespace MyApp {
 		//ShowImguiExample();
 		//ImGui::ShowDemoWindow();
 
-		
-		
-		
-
-
-        ImGui::Begin("SolidWorks API");                          // Create a window called "Hello, world!" and append into it.
-
+        ImGui::Begin("SolidWorks API");
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
 		
-		//SWBotton("连接SW", SWState::Connected, ConnectSW);
-		//SWBotton("打开文件", SWState::FileOpen, OpenFile);
-		//SWBotton("读取属性", SWState::PropertyGot, ReadProperty);
-		if (ImGui::Button("连接SW")) {
-			
+		//连接SW按钮
+		if (ImGui::Button("连接SW")) {			
 			myState = ConnectSW() ? MyState::Succeed : MyState::Failed;
 			SWStateMap[SWState::Connected] = myState;
 			ImGui::OpenPopup("提示");
@@ -48,6 +40,7 @@ namespace MyApp {
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::Connected]].c_str());
 
+		//打开文件按钮
 		if (ImGui::Button("打开文件")) {
 			if (SWStateMap[SWState::Connected] == MyState::Succeed) {
 				myState = OpenFile() ? MyState::Succeed : MyState::Failed;
@@ -62,9 +55,11 @@ namespace MyApp {
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::FileOpen]].c_str());
 
+		//读取属性按钮
 		if (ImGui::Button("读取属性")) {
 			if (SWStateMap[SWState::Connected] == MyState::Succeed && SWStateMap[SWState::FileOpen] == MyState::Succeed) {
 				myState = ReadProperty() ? MyState::Succeed : MyState::Failed;
+				hasProperty = myState == MyState::Succeed ? true : false;
 				SWStateMap[SWState::PropertyGot] = myState;
 			}
 			else
@@ -77,31 +72,69 @@ namespace MyApp {
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::PropertyGot]].c_str());
 
-		
-		ShowMessage(MyStateMessage[(int)myState].c_str());
+		//读取MBD特征及其标注按钮
+		if (ImGui::Button("读取MBD特征及其标注")) {
+			if (SWStateMap[SWState::Connected] == MyState::Succeed && SWStateMap[SWState::FileOpen] == MyState::Succeed) {
+				myState = ReadMBD() ? MyState::Succeed : MyState::Failed;
+				hasMBD = myState == MyState::Succeed ? true : false;
+				SWStateMap[SWState::MBDGot] = myState;
+			}
+			else
+			{
+				myState = MyState::Nothing;
+				SWStateMap[SWState::MBDGot] = myState;
+			}
+			ImGui::OpenPopup("提示");
+		}
+		ImGui::SameLine();
+		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::MBDGot]].c_str());
 
+		//显示弹窗
+		ShowMessage(MyStateMessage[(int)myState].c_str());
 		
 		//显示属性
 		if (hasProperty) {
-			ImGui::Separator();
-			for (auto p : property) {
-				std::string m = p.first + ":";
-				m = m + p.second;
-				ImGui::Text(m.c_str());
+			if (ImGui::CollapsingHeader("属性")) {
+				if (ImGui::TreeNode("自定义属性")){
+					for (auto p : property) {
+						std::string m = p.first + ":";
+						m = m + p.second;
+						ImGui::Text(m.c_str());
+					}
+					ImGui::TreePop();
+					ImGui::Separator();
+				}
+				if (ImGui::TreeNode("摘要")) {
+					for (auto s : summary) {
+						std::string m = s.first + s.second;
+						ImGui::Text(m.c_str());
+					}
+					ImGui::TreePop();
+					ImGui::Separator();
+				}
 			}
-			for (auto s : summary) {
-				std::string m = s.first + s.second;
-				ImGui::Text(m.c_str());
+		}
+
+		//显示MBD
+		if (hasMBD) {
+			if (ImGui::CollapsingHeader("MBD特征及其标注")){					
+				ImGui::Text("MBD特征总数:%d", DimXpertFeatureCount);
+				ImGui::Text("MBD标注总数:%d", DimXpertAnnotationCount);
+				ImGui::Separator();
+				for (auto d : DimXpertMap) {
+					if (ImGui::TreeNode(d.first.c_str())) {
+						for (auto a : d.second) {
+							ImGui::Text(a.c_str());
+						}
+						ImGui::TreePop();
+						ImGui::Separator();
+					}
+
+				}
 			}
 		}
 		
-
         ImGui::End();
-
-        
-
-
-		
 
     }
 
@@ -189,7 +222,7 @@ namespace MyApp {
 		if (toLoad)
 		{
 			ImGui::OpenPopup("提示");
-			toLoad = ShowMessage("嘻嘻");
+			toLoad = ShowMessage("github.com/PLY2001/SWApp");
 		}
 	}
 
@@ -270,13 +303,14 @@ namespace MyApp {
 	bool MyApplication::OpenFile()
 	{
 		// Open Selected file             
-		CComBSTR fileName = "D:/Files/test.SLDPRT";
+		CComBSTR fileName = "D:/Projects/SWApp/SolidWorks Part/lego1.SLDPRT";
 		long error = NOERROR;
 		long warning = NOERROR;
 
+		//打开文件
 		result = swApp->OpenDoc6(fileName, (int)swDocumentTypes_e::swDocPART, (int)swOpenDocOptions_e::swOpenDocOptions_Silent, nullptr, &error, &warning, &swDoc);//error=2表示无法找到文件
 
-		if (result != S_OK)
+		if (result!=S_OK || error != NOERROR)
 		{
 			// COM Style String for message to user
 			//_messageToUser = (L"Failed to open document.\nPlease try again.");
@@ -297,23 +331,20 @@ namespace MyApp {
 
 	bool MyApplication::ReadProperty()
 	{
-		CComBSTR customFieldNames[2] = { "Description" ,"Weight" };
+		CComBSTR customFieldNames[2] = { "Description" ,"Weight" };//设置需读取的自定义属性
 		for (CComBSTR fieldName : customFieldNames) {
 			CComBSTR fieldResult;
 			result = swDoc->get_CustomInfo(fieldName, &fieldResult);
 			if (result != S_OK) {
-				hasProperty = false;
 				CoUninitialize();
 				return false;
 			}
-
 			std::string aaa = GbkToUtf8(_com_util::ConvertBSTRToString(fieldName));
-
 			std::string bbb = GbkToUtf8(_com_util::ConvertBSTRToString(fieldResult));
 			property[aaa] = bbb;
-
 		}
 
+		//设置需读取的摘要
 		std::unordered_map<swSummInfoField_e, std::string> summaryFieldNames = {
 			 {swSummInfoField_e::swSumInfoAuthor,"Author:"}
 			,{swSummInfoField_e::swSumInfoComment,"Comment:"}
@@ -330,55 +361,218 @@ namespace MyApp {
 			CComBSTR fieldResult;
 			result = swDoc->get_SummaryInfo(fieldName.first, &fieldResult);
 			if (result != S_OK) {
-				hasProperty = false;
 				CoUninitialize();
 				return false;
 			}
-
 			std::string bbb = GbkToUtf8(_com_util::ConvertBSTRToString(fieldResult));
 			summary[fieldName.second] = bbb;
 		}
 
-		hasProperty = true;
 		return true;
 
-
-
-		//result = swDoc->get_ISelectionManager(&swSelectionManager);
-
-		//long index;
-		//long mark;
-		//swSelectionManager->GetSelectedObject6(1, -1, &swDispatch);
-
-
-		//swDispatch = swApp;
-
-		//swDimXpert->get_DimXpertPart();
-
-		//swAnnotation->GetDimXpertFeature();
-		//swAnnotation->GetDimXpertName();
-		//swAnnotation->IsDimXpert();
-
-		//IDimXpertAnnotation
-		//(IDimXpertFeature)swDis
-		//DimXpertFeature
+		
 
 	}
 
-	//bool MyApplication::SWBotton(const char* BottonName, SWState state, bool(*func)())
-	//{
-	//	if (ImGui::Button(BottonName)) {
-	//		if (SWStateMap[state] != MyState::Succeed) {
-	//			myState = func? MyState::Succeed : MyState::Failed;
-	//			SWStateMap[state] = myState;
-	//		}
-	//		else {
-	//			myState = MyState::Nothing;
-	//			SWStateMap[state] = myState;
-	//		}
-	//		ImGui::OpenPopup("提示");
-	//	}
-	//}
+	bool MyApplication::ReadMBD()
+	{
+		//swDoc->swConfiguration->swDimXpertManager->swDimXpertPart->Annotation和Feature
+		result = swDoc->IGetActiveConfiguration(&swConfiguration);//获取swConfiguration
+		if (result != S_OK) {
+			CoUninitialize();
+			return false;
+		}
+		result = swConfiguration->get_DimXpertManager(VARIANT_TRUE, &swDimXpertManager);//获取swDimXpertManager
+		if (result != S_OK) {
+			CoUninitialize();			
+			return false;
+		}
+		result = swDimXpertManager->get_DimXpertPart(&swDispatch);//获取swDimXpertPart(由swDispatch父类接口实例承载)
+		if (result != S_OK) {
+			CoUninitialize();			
+			return false;
+		}
+		swDimXpertPart = swDispatch;//转化为具体接口类型
+		result = swDimXpertPart->GetFeatureCount(&DimXpertFeatureCount);//获取特征数量
+		if (result != S_OK) {
+			CoUninitialize();
+			return false;
+		}
+		result = swDimXpertPart->GetAnnotationCount(&DimXpertAnnotationCount);//读取标注数量
+		if (result != S_OK) {
+			CoUninitialize();			
+			return false;
+		}
+		swDimXpertPart->GetAnnotations(&dimXpertAnnotationVT);//获取标注SAFEARRAY数组的承载体
+		if (result != S_OK) {
+			CoUninitialize();			
+			return false;
+		}
+		
+		//读取SAFEARRAY
+		// verify that it's an array
+		if (V_ISARRAY(&dimXpertAnnotationVT))
+		{
+			// get safe array
+			SAFEARRAY* pSafeArray = V_ARRAY(&dimXpertAnnotationVT);
+			// determine the type of item in the array
+			VARTYPE itemType;
+			if (SUCCEEDED(SafeArrayGetVartype(pSafeArray, &itemType)))
+			{
+				// verify it's the type you expect
+				if (itemType == VT_DISPATCH)///////////////////////该数组类型为存储IDispatch*指针的数组
+				{
+					// verify that it's a one-dimensional array
+					if (SafeArrayGetDim(pSafeArray) == 1)
+					{
+						// determine the upper and lower bounds of the first dimension
+						LONG lBound;
+						LONG uBound;
+						if (SUCCEEDED(SafeArrayGetLBound(pSafeArray, 1, &lBound)) && SUCCEEDED(SafeArrayGetUBound(pSafeArray, 1, &uBound)))
+						{
+							// determine the number of items in the array
+							LONG itemCount = uBound - lBound + 1;
+							// begin accessing data
+							LPVOID pData;
+							if (SUCCEEDED(SafeArrayAccessData(pSafeArray, &pData)))//提取数组指针至pData
+							{
+								// here you can cast pData to an array (pointer) of the type you expect
+								IDispatch** myData = (IDispatch**)pData;///////////////////////////////////将数组指针赋与IDispatch**类型的指针数组的指针
+								// use the data here.
+								IDimXpertAnnotation* myAnnotationData;//用于获取IDimXpertAnnotation*类型数据						
+								CComBSTR dimXpertFeatureName;
+								CComBSTR dimXpertAnnotationName;
+								std::string dimXpertFeatureNameStr;
+								std::string dimXpertAnnotationNameStr;
+								for (int i = 0; i < itemCount; i++) {
+									result = myData[i]->QueryInterface(IID_IDimXpertAnnotation, (void**)&myAnnotationData);//为了将IDispatch*类型转为IDimXpertAnnotation*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertAnnotation是要查询的接口类型
+									if (result != S_OK) {
+										CoUninitialize();										
+										return false;
+									}
+									
+									swDimXpertAnnotation = CComPtr<IDimXpertAnnotation>(myAnnotationData);//用构造函数将IDimXpertAnnotation*普通指针转为CComPtr智能指针
+									swDimXpertFeature.Release();//不Release的话，get_Feature(&swDimXpertFeature);会报错
+									result = swDimXpertAnnotation->get_Feature(&swDimXpertFeature);
+									if (result != S_OK) {
+										CoUninitialize();										
+										return false;
+									}
+									result = swDimXpertFeature->get_Name(&dimXpertFeatureName);//result为false？不知为何，但是能读取
+									//if (result != S_OK) {
+									//	CoUninitialize();										
+									//	return false;
+									//}
+									result = swDimXpertAnnotation->get_Name(&dimXpertAnnotationName);
+									//if (result != S_OK) {
+									//	CoUninitialize();										
+									//	return false;
+									//}
+									
+									dimXpertFeatureNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertFeatureName));
+									dimXpertAnnotationNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertAnnotationName));
+									DimXpertMap[dimXpertFeatureNameStr].push_back(dimXpertAnnotationNameStr);
+									
+								}
+								// end accessing data
+								SafeArrayUnaccessData(pSafeArray);
+							}
+							else {
+								CoUninitialize();								
+								return false;
+							}
+						}
+						else {
+							CoUninitialize();							
+							return false;
+						}
+					}
+				}
+			}
+			else {
+				CoUninitialize();				
+				return false;	
+			}
+		}
+
+
+		//获取建模的特征（非DimXpert）
+		//result = swDoc->get_FeatureManager(&swFeatureManager);
+		//if (result != S_OK) {
+		//	CoUninitialize();
+		//	return false;
+		//}
+		//result = swFeatureManager->get_FeatureStatistics(&swFeatureStatistics);
+		//if (result != S_OK) {
+		//	CoUninitialize();
+		//	return false;
+		//}
+		//VARIANT_BOOL temp1 = VARIANT_FALSE;
+		//swFeatureStatistics->Refresh(&temp1);
+		//
+		//result = swFeatureStatistics->get_FeatureCount(&featureCount);
+		//if (result != S_OK) {
+		//	CoUninitialize();
+		//	return false;
+		//}
+		//result = swFeatureStatistics->get_FeatureNames(&featureNames);
+		//// verify that it's an array
+		//if (V_ISARRAY(&featureNames))
+		//{
+		//	// get safe array
+		//	LPSAFEARRAY pSafeArray = V_ARRAY(&featureNames);
+		//
+		//	// determine the type of item in the array
+		//	VARTYPE itemType;
+		//	if (SUCCEEDED(SafeArrayGetVartype(pSafeArray, &itemType)))
+		//	{
+		//		// verify it's the type you expect
+		//		// (The API you're using probably returns a safearray of VARIANTs,
+		//		// so I'll use VT_VARIANT here. You should double-check this.)
+		//		if (itemType == VT_BSTR)//////////////////////////////////////////////////////////////////////
+		//		{
+		//			// verify that it's a one-dimensional array
+		//			// (The API you're using probably returns a one-dimensional array.)
+		//			if (SafeArrayGetDim(pSafeArray) == 1)
+		//			{
+		//				// determine the upper and lower bounds of the first dimension
+		//				LONG lBound;
+		//				LONG uBound;
+		//				if (SUCCEEDED(SafeArrayGetLBound(pSafeArray, 1, &lBound)) && SUCCEEDED(SafeArrayGetUBound(pSafeArray, 1, &uBound)))
+		//				{
+		//					// determine the number of items in the array
+		//					LONG itemCount = uBound - lBound + 1;
+		//
+		//					// begin accessing data
+		//					LPVOID pData;
+		//					if (SUCCEEDED(SafeArrayAccessData(pSafeArray, &pData)))
+		//					{
+		//						// here you can cast pData to an array (pointer) of the type you expect
+		//						// (The API you're using probably returns a safearray of VARIANTs,
+		//						// so I'll use VARIANT here. You should double-check this.)
+		//						BSTR* sgg = (BSTR*)pData;////////////////////////////////////////////////////////////////////////
+		//
+		//						// use the data here.
+		//						for (int i = 0; i++; i < 8) {
+		//							s[i] = GbkToUtf8(_com_util::ConvertBSTRToString(sgg[i]));
+		//						}
+		//
+		//						// end accessing data
+		//						SafeArrayUnaccessData(pSafeArray);
+		//					}
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
+
+		
+
+		
+		return true;
+	}
+
+	
 
 	std::string  MyApplication::GbkToUtf8(const char* src_str)
 	{

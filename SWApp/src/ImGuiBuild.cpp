@@ -1,4 +1,4 @@
-//不知道为什么需要这个cpp文件，如果没有会出现LINK错误
+//涓嶇煡閬撲负浠�涔堥渶瑕佽繖涓猚pp鏂囦欢锛屽鏋滄病鏈変細鍑虹幇LINK閿欒
 #pragma once
 #define IMGUI_IMPL_OPENGL_LOADER_GLAD
 #include "imgui_impl_opengl3.cpp"

@@ -90,7 +90,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
     //io.ConfigViewportsNoAutoMerge = true;
     //io.ConfigViewportsNoTaskBarIcon = true;
-    io.Fonts->AddFontFromFileTTF("res/fonts/msyh.ttc", 20.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());//���塢��С
+    io.Fonts->AddFontFromFileTTF("res/fonts/msyh.ttc", 20.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());//中文字体
 
     // Setup Dear ImGui style
     //ImGui::StyleColorsDark();
@@ -158,7 +158,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
         //MyApp
        
-		MyApp::MyApplication& App = MyApp::MyApplication::GetInstance();
+		MyApp::MyApplication& App = MyApp::MyApplication::GetInstance();//获取唯一的实例引用
 		App.ShowMyApp();
         
         /*
