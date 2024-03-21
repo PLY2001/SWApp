@@ -58,6 +58,9 @@ namespace MyApp {
 		bool ReadMBD();
 
 		std::string GbkToUtf8(const char* src_str);//将SW默认文本的GBK编码转为ImGui显示文本用的Utf8编码
+		bool ReadSafeArray(VARIANT* vt, VARENUM vtType, int dimensional, LPVOID* pData, LONG* itemCount);
+		template<typename T>
+		bool CreatVARIANTArray(int size, VARENUM type, T* buffer, VARIANT* array);
 	
 	public:
 		void ShowMyApp();

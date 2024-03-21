@@ -17,6 +17,18 @@ namespace MyApp {
 	CComPtr<IDimXpertAnnotation> swDimXpertAnnotation;//DimXpert标注
 	VARIANT dimXpertAnnotationVT;//获取DimXpert标注的SAFEARRAY数组的载体
 
+
+	CComPtr<IFace2> swFace;//面
+	VARIANT faceVT;//获取面的SAFEARRAY数组的载体
+	VARIANT boxVT;//获取面的包围盒的SAFEARRAY数组的载体	
+	CComPtr<IMathUtility> swMathUtility;//用于生成数学向量、矩阵等
+	CComPtr<IMathPoint> startPoint;//投影光线起点，单位m
+	CComPtr<IMathVector> projectDir;//投影光线方向
+	CComPtr<IMathPoint> interactPoint;//投影光线与面的交点
+	VARIANT startPointVT;//用于生成投影光线起点的SAFEARRAY数组的载体
+	VARIANT projectDirVT;//用于生成投影光线方向的SAFEARRAY数组的载体
+	VARIANT interactPointVT;//用于生成投影光线与面的交点的SAFEARRAY数组的载体
+
 	HRESULT result = NOERROR; //存储函数的输出结果
 	
 	//CComBSTR _messageToUser;// COM Style String for message to user
@@ -291,9 +303,16 @@ namespace MyApp {
 	bool MyApplication::ConnectSW()
 	{
 		CoInitialize(NULL); //初始化COM库（让Windows加载DLLs）
+		swApp.Release();//Realease的作用是避免重复初始化swApp，导致出错
 		if (swApp.CoCreateInstance(__uuidof(SldWorks), NULL, CLSCTX_LOCAL_SERVER) != S_OK)//创建swApp指针的对象实例
 		{
 			// Stop COM 
+			CoUninitialize();
+			return false;
+		}
+		swMathUtility.Release();
+		result = swApp->IGetMathUtility(&swMathUtility);//由swApp初始化swMathUtility
+		if (result != S_OK) {
 			CoUninitialize();
 			return false;
 		}
@@ -303,11 +322,12 @@ namespace MyApp {
 	bool MyApplication::OpenFile()
 	{
 		// Open Selected file             
-		CComBSTR fileName = "D:/Projects/SWApp/SolidWorks Part/lego1.SLDPRT";
+		CComBSTR fileName = "D:/Projects/SWApp/SolidWorks Part/base.SLDPRT";
 		long error = NOERROR;
 		long warning = NOERROR;
 
 		//打开文件
+		swDoc.Release();
 		result = swApp->OpenDoc6(fileName, (int)swDocumentTypes_e::swDocPART, (int)swOpenDocOptions_e::swOpenDocOptions_Silent, nullptr, &error, &warning, &swDoc);//error=2表示无法找到文件
 
 		if (result!=S_OK || error != NOERROR)
@@ -377,16 +397,19 @@ namespace MyApp {
 	bool MyApplication::ReadMBD()
 	{
 		//swDoc->swConfiguration->swDimXpertManager->swDimXpertPart->Annotation和Feature
+		swConfiguration.Release();
 		result = swDoc->IGetActiveConfiguration(&swConfiguration);//获取swConfiguration
 		if (result != S_OK) {
 			CoUninitialize();
 			return false;
 		}
+		swDimXpertManager.Release();
 		result = swConfiguration->get_DimXpertManager(VARIANT_TRUE, &swDimXpertManager);//获取swDimXpertManager
 		if (result != S_OK) {
 			CoUninitialize();			
 			return false;
 		}
+		swDispatch.Release();
 		result = swDimXpertManager->get_DimXpertPart(&swDispatch);//获取swDimXpertPart(由swDispatch父类接口实例承载)
 		if (result != S_OK) {
 			CoUninitialize();			
@@ -409,91 +432,139 @@ namespace MyApp {
 			return false;
 		}
 		
-		//读取SAFEARRAY
-		// verify that it's an array
-		if (V_ISARRAY(&dimXpertAnnotationVT))
-		{
-			// get safe array
-			SAFEARRAY* pSafeArray = V_ARRAY(&dimXpertAnnotationVT);
-			// determine the type of item in the array
-			VARTYPE itemType;
-			if (SUCCEEDED(SafeArrayGetVartype(pSafeArray, &itemType)))
-			{
-				// verify it's the type you expect
-				if (itemType == VT_DISPATCH)///////////////////////该数组类型为存储IDispatch*指针的数组
-				{
-					// verify that it's a one-dimensional array
-					if (SafeArrayGetDim(pSafeArray) == 1)
-					{
-						// determine the upper and lower bounds of the first dimension
-						LONG lBound;
-						LONG uBound;
-						if (SUCCEEDED(SafeArrayGetLBound(pSafeArray, 1, &lBound)) && SUCCEEDED(SafeArrayGetUBound(pSafeArray, 1, &uBound)))
-						{
-							// determine the number of items in the array
-							LONG itemCount = uBound - lBound + 1;
-							// begin accessing data
-							LPVOID pData;
-							if (SUCCEEDED(SafeArrayAccessData(pSafeArray, &pData)))//提取数组指针至pData
-							{
-								// here you can cast pData to an array (pointer) of the type you expect
-								IDispatch** myData = (IDispatch**)pData;///////////////////////////////////将数组指针赋与IDispatch**类型的指针数组的指针
-								// use the data here.
-								IDimXpertAnnotation* myAnnotationData;//用于获取IDimXpertAnnotation*类型数据						
-								CComBSTR dimXpertFeatureName;
-								CComBSTR dimXpertAnnotationName;
-								std::string dimXpertFeatureNameStr;
-								std::string dimXpertAnnotationNameStr;
-								for (int i = 0; i < itemCount; i++) {
-									result = myData[i]->QueryInterface(IID_IDimXpertAnnotation, (void**)&myAnnotationData);//为了将IDispatch*类型转为IDimXpertAnnotation*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertAnnotation是要查询的接口类型
-									if (result != S_OK) {
-										CoUninitialize();										
-										return false;
-									}
-									
-									swDimXpertAnnotation = CComPtr<IDimXpertAnnotation>(myAnnotationData);//用构造函数将IDimXpertAnnotation*普通指针转为CComPtr智能指针
-									swDimXpertFeature.Release();//不Release的话，get_Feature(&swDimXpertFeature);会报错
-									result = swDimXpertAnnotation->get_Feature(&swDimXpertFeature);
-									if (result != S_OK) {
-										CoUninitialize();										
-										return false;
-									}
-									result = swDimXpertFeature->get_Name(&dimXpertFeatureName);//result为false？不知为何，但是能读取
-									//if (result != S_OK) {
-									//	CoUninitialize();										
-									//	return false;
-									//}
-									result = swDimXpertAnnotation->get_Name(&dimXpertAnnotationName);
-									//if (result != S_OK) {
-									//	CoUninitialize();										
-									//	return false;
-									//}
-									
-									dimXpertFeatureNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertFeatureName));
-									dimXpertAnnotationNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertAnnotationName));
-									DimXpertMap[dimXpertFeatureNameStr].push_back(dimXpertAnnotationNameStr);
-									
-								}
-								// end accessing data
-								SafeArrayUnaccessData(pSafeArray);
-							}
-							else {
-								CoUninitialize();								
-								return false;
-							}
-						}
-						else {
-							CoUninitialize();							
-							return false;
-						}
-					}
-				}
-			}
-			else {
-				CoUninitialize();				
-				return false;	
-			}
+		//读取DimXpert标注的SAFEARRAY
+		LPVOID aData = nullptr;//接收读取后的数组
+		LONG itemCount;//接收读取后的数组大小
+		if (!ReadSafeArray(&dimXpertAnnotationVT, VT_DISPATCH, 1, &aData, &itemCount)) {
+			CoUninitialize();
+			return false;
 		}
+		// here you can cast pData to an array (pointer) of the type you expect
+		IDispatch** myaData = (IDispatch**)aData;///////////////////////////////////将数组指针赋与IDispatch**类型的指针数组的指针
+		// use the data here.
+		IDimXpertAnnotation* myAnnotationData;//用于获取IDimXpertAnnotation*类型数据						
+		CComBSTR dimXpertFeatureName;
+		CComBSTR dimXpertAnnotationName;
+		std::string dimXpertFeatureNameStr;
+		std::string dimXpertAnnotationNameStr;
+		for (int i = 0; i < itemCount; i++) {
+			result = myaData[i]->QueryInterface(IID_IDimXpertAnnotation, (void**)&myAnnotationData);//为了将IDispatch*类型转为IDimXpertAnnotation*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertAnnotation是要查询的接口类型
+			if (result != S_OK) {
+				CoUninitialize();										
+				return false;
+			}
+			
+			swDimXpertAnnotation = CComPtr<IDimXpertAnnotation>(myAnnotationData);//用构造函数将IDimXpertAnnotation*普通指针转为CComPtr智能指针
+			swDimXpertFeature.Release();//不Release的话，get_Feature(&swDimXpertFeature);会报错
+			result = swDimXpertAnnotation->get_Feature(&swDimXpertFeature);
+			if (result != S_OK) {
+				CoUninitialize();										
+				return false;
+			}
+			result = swDimXpertFeature->get_Name(&dimXpertFeatureName);//result为false？不知为何，但是能读取
+			//if (result != S_OK) {
+			//	CoUninitialize();										
+			//	return false;
+			//}
+			result = swDimXpertAnnotation->get_Name(&dimXpertAnnotationName);
+			//if (result != S_OK) {
+			//	CoUninitialize();										
+			//	return false;
+			//}
+			
+			dimXpertFeatureNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertFeatureName));
+			dimXpertAnnotationNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertAnnotationName));
+			DimXpertMap[dimXpertFeatureNameStr].push_back(dimXpertAnnotationNameStr);
+			
+			//读取DimXpert特征所对应的面
+			result = swDimXpertFeature->GetFaces(&faceVT);
+			//读取面的SAFEARRAY
+			LPVOID fData = nullptr;
+			LONG faceCount;
+			if (!ReadSafeArray(&faceVT, VT_DISPATCH, 1, &fData, &faceCount)) {
+				CoUninitialize();
+				return false;
+			}
+			// here you can cast pData to an array (pointer) of the type you expect
+			IDispatch** myfData = (IDispatch**)fData;
+			// use the data here.
+			IFace2* myFaceData;//用于获取IFace2*类型数据						
+			for (int i = 0; i < faceCount; i++) {
+				result = myfData[i]->QueryInterface(IID_IFace2, (void**)&myFaceData);
+				if (result != S_OK) {
+					CoUninitialize();
+					return false;
+				}
+
+				swFace = CComPtr<IFace2>(myFaceData);
+				
+				myFaceData->GetBox(&boxVT);//获取包围盒坐标。一共6个值：第一个点的xyz，第二个点的xyz，单位m
+				//读取包围盒的SAFEARRAY
+				LPVOID bData = nullptr;
+				LONG boxCount;
+				if (!ReadSafeArray(&boxVT, VT_R8, 1, &bData, &boxCount)) {
+					CoUninitialize();
+					return false;
+				}
+				// here you can cast pData to an array (pointer) of the type you expect
+				double* mybData = (double*)bData;
+				// use the data here.
+				double myBoxPos1[3] = { 0,0,0 };//用于获取double类型数据	
+				double myBoxPos2[3] = { 0,0,0 };//用于获取double类型数据	
+				for (int i = 0; i < boxCount; i++) {
+					if (i < 3)
+						myBoxPos1[i] = mybData[i];//包围盒点1
+					else
+						myBoxPos2[i - 3] = mybData[i];//包围盒点2
+				}
+
+				double thisPos[3];//目前的投影光线起点
+				double dir[3] = { 1,0,0 };//目前的投影光线方向
+				int sampleCount = 10;//投影采样次数
+				for (int i = 0; i < sampleCount; i++) {
+					thisPos[0] = myBoxPos1[0] + i * (myBoxPos2[0] - myBoxPos1[0]) / sampleCount;
+					thisPos[1] = myBoxPos1[1] + i * (myBoxPos2[1] - myBoxPos1[1]) / sampleCount;
+					thisPos[2] = myBoxPos1[2] + i * (myBoxPos2[2] - myBoxPos1[2]) / sampleCount;
+
+					startPoint.Release();
+					projectDir.Release();
+					interactPoint.Release();
+
+					CreatVARIANTArray(3, VT_R8, thisPos, &startPointVT);//生成VARIANT数组
+					swDispatch.Release();
+					result = swMathUtility->CreatePoint(startPointVT, &swDispatch);//生成点
+					startPoint = swDispatch;
+
+					CreatVARIANTArray(3, VT_R8, dir, &projectDirVT);//生成VARIANT数组
+					swDispatch.Release();
+					result = swMathUtility->CreateVector(projectDirVT, &swDispatch);//生成向量
+					projectDir = swDispatch;
+
+					result = swFace->GetProjectedPointOn(startPoint, projectDir, &interactPoint);//投影，求得的交点单位是m，若未相交为NULL
+					if (interactPoint != NULL) {
+						result = interactPoint->get_ArrayData(&interactPointVT);
+						LPVOID iData = nullptr;
+						LONG iCount;
+						if (ReadSafeArray(&interactPointVT, VT_R8, 1, &iData, &iCount)) {
+							//存数据
+						}
+
+					}
+
+				}
+
+
+				
+				
+				
+				
+			}
+			
+			
+			
+		}
+		
+		
 
 
 		//获取建模的特征（非DimXpert）
@@ -590,6 +661,81 @@ namespace MyApp {
 		return strTemp;
 	}
 
+
+	bool MyApplication::ReadSafeArray(VARIANT* vt,VARENUM vtType,int dimensional,LPVOID* pData, LONG* itemCount)
+	{
+		//读取SAFEARRAY
+		// verify that it's an array
+		if (V_ISARRAY(vt))
+		{
+			// get safe array
+			SAFEARRAY* pSafeArray = V_ARRAY(vt);
+			// determine the type of item in the array
+			VARTYPE itemType;
+			if (SUCCEEDED(SafeArrayGetVartype(pSafeArray, &itemType)))
+			{
+				// verify it's the type you expect
+				if (itemType == vtType)///////////////////////该数组类型为存储IDispatch*指针的数组
+				{
+					// verify that it's a one-dimensional array
+					if (SafeArrayGetDim(pSafeArray) == dimensional)
+					{
+						// determine the upper and lower bounds of the first dimension
+						LONG lBound;
+						LONG uBound;
+						if (SUCCEEDED(SafeArrayGetLBound(pSafeArray, 1, &lBound)) && SUCCEEDED(SafeArrayGetUBound(pSafeArray, 1, &uBound)))
+						{
+							// determine the number of items in the array
+							*itemCount = uBound - lBound + 1;
+							// begin accessing data
+							//LPVOID pData;
+							if (SUCCEEDED(SafeArrayAccessData(pSafeArray, &*pData)))//提取数组指针至pData
+							{
+								
+								// end accessing data
+								SafeArrayUnaccessData(pSafeArray);
+								return true;
+							}
+							else {
+								CoUninitialize();
+								return false;
+							}
+						}
+						else {
+							CoUninitialize();
+							return false;
+						}
+					}
+				}
+			}
+			else {
+				CoUninitialize();
+				return false;
+			}
+		}
+	}
+
+	template<typename T>
+	bool MyApplication::CreatVARIANTArray(int size, VARENUM type, T* buffer, VARIANT* array)
+	{
+		SAFEARRAY* psa; //使用数组整理读取的数据
+		SAFEARRAYBOUND rgsabound[1];
+		rgsabound[0].cElements = size; //设置数组的大小
+		rgsabound[0].lLbound = 0;
+		psa = SafeArrayCreate(type, 1, rgsabound); //创建SafeArray数组
+
+		long len = psa->rgsabound[0].cElements;
+		for (long i = 0; i < len; i++) {
+			result = SafeArrayPutElement(psa, &i, &buffer[i]);
+			if (result != S_OK) {
+				CoUninitialize();
+				return false;
+			}
+		}
+		array->vt = VT_ARRAY | VT_R8; //数组类型
+		array->parray = psa;
+		return true;
+	}
 
 }
 
