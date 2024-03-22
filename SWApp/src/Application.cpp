@@ -16,18 +16,22 @@ namespace MyApp {
 	CComPtr<IDimXpertFeature> swDimXpertFeature;//DimXpert特征
 	CComPtr<IDimXpertAnnotation> swDimXpertAnnotation;//DimXpert标注
 	VARIANT dimXpertAnnotationVT;//获取DimXpert标注的SAFEARRAY数组的载体
+	VARIANT dimXpertFeatureVT;//获取DimXpert标注的SAFEARRAY数组的载体
 
 
 	CComPtr<IFace2> swFace;//面
 	VARIANT faceVT;//获取面的SAFEARRAY数组的载体
-	VARIANT boxVT;//获取面的包围盒的SAFEARRAY数组的载体	
-	CComPtr<IMathUtility> swMathUtility;//用于生成数学向量、矩阵等
-	CComPtr<IMathPoint> startPoint;//投影光线起点，单位m
-	CComPtr<IMathVector> projectDir;//投影光线方向
-	CComPtr<IMathPoint> interactPoint;//投影光线与面的交点
-	VARIANT startPointVT;//用于生成投影光线起点的SAFEARRAY数组的载体
-	VARIANT projectDirVT;//用于生成投影光线方向的SAFEARRAY数组的载体
-	VARIANT interactPointVT;//用于生成投影光线与面的交点的SAFEARRAY数组的载体
+	//RIANT boxVT;//获取面的包围盒的SAFEARRAY数组的载体	
+	//omPtr<IMathUtility> swMathUtility;//用于生成数学向量、矩阵等
+	//omPtr<IMathPoint> startPoint;//投影光线起点，单位m
+	//omPtr<IMathVector> projectDir;//投影光线方向
+	//omPtr<IMathPoint> interactPoint;//投影光线与面的交点
+	//RIANT startPointVT;//用于生成投影光线起点的SAFEARRAY数组的载体
+	//RIANT projectDirVT;//用于生成投影光线方向的SAFEARRAY数组的载体
+	//RIANT interactPointVT;//用于生成投影光线与面的交点的SAFEARRAY数组的载体
+	CComPtr<IEntity> swEntity;//面的实体
+
+	
 
 	HRESULT result = NOERROR; //存储函数的输出结果
 	
@@ -133,10 +137,10 @@ namespace MyApp {
 				ImGui::Text("MBD特征总数:%d", DimXpertFeatureCount);
 				ImGui::Text("MBD标注总数:%d", DimXpertAnnotationCount);
 				ImGui::Separator();
-				for (auto d : DimXpertMap) {
-					if (ImGui::TreeNode(d.first.c_str())) {
-						for (auto a : d.second) {
-							ImGui::Text(a.c_str());
+				for (auto feature : myFeatureFaceArray) {
+					if (ImGui::TreeNode(feature.Name.c_str())) {
+						for (auto annotation : feature.AnnotationArray) {
+							ImGui::Text(annotation.Name.c_str());
 						}
 						ImGui::TreePop();
 						ImGui::Separator();
@@ -310,12 +314,12 @@ namespace MyApp {
 			CoUninitialize();
 			return false;
 		}
-		swMathUtility.Release();
-		result = swApp->IGetMathUtility(&swMathUtility);//由swApp初始化swMathUtility
-		if (result != S_OK) {
-			CoUninitialize();
-			return false;
-		}
+		//MathUtility.Release();
+		//sult = swApp->IGetMathUtility(&swMathUtility);//由swApp初始化swMathUtility
+		//if (result != S_OK) {
+		//	CoUninitialize();
+		//	return false;
+		//}
 		return true;
 	}
 
@@ -396,7 +400,9 @@ namespace MyApp {
 
 	bool MyApplication::ReadMBD()
 	{
-		//swDoc->swConfiguration->swDimXpertManager->swDimXpertPart->Annotation和Feature
+		//步骤：swDoc->swConfiguration->swDimXpertManager->swDimXpertPart->Feature->Annotation
+		myFeatureFaceArray.clear();	
+
 		swConfiguration.Release();
 		result = swDoc->IGetActiveConfiguration(&swConfiguration);//获取swConfiguration
 		if (result != S_OK) {
@@ -426,57 +432,99 @@ namespace MyApp {
 			CoUninitialize();			
 			return false;
 		}
-		swDimXpertPart->GetAnnotations(&dimXpertAnnotationVT);//获取标注SAFEARRAY数组的承载体
+		
+		//1.获取特征SAFEARRAY数组的承载体
+		swDimXpertPart->GetFeatures(&dimXpertFeatureVT);
 		if (result != S_OK) {
 			CoUninitialize();			
 			return false;
-		}
-		
-		//读取DimXpert标注的SAFEARRAY
-		LPVOID aData = nullptr;//接收读取后的数组
-		LONG itemCount;//接收读取后的数组大小
-		if (!ReadSafeArray(&dimXpertAnnotationVT, VT_DISPATCH, 1, &aData, &itemCount)) {
+		}		
+		//读取DimXpert特征的SAFEARRAY
+		LPVOID feData = nullptr;//接收读取后的数组
+		LONG featureCount;//接收读取后的数组大小
+		if (!ReadSafeArray(&dimXpertFeatureVT, VT_DISPATCH, 1, &feData, &featureCount)) {
 			CoUninitialize();
 			return false;
 		}
-		// here you can cast pData to an array (pointer) of the type you expect
-		IDispatch** myaData = (IDispatch**)aData;///////////////////////////////////将数组指针赋与IDispatch**类型的指针数组的指针
-		// use the data here.
-		IDimXpertAnnotation* myAnnotationData;//用于获取IDimXpertAnnotation*类型数据						
+		IDispatch** myfeData = (IDispatch**)feData;//将数组指针赋与IDispatch**类型的指针数组的指针，与ReadSafeArray类型一致
+		IDimXpertFeature* myFeatureData;//用于最终获取IDimXpertFeature*类型数据						
 		CComBSTR dimXpertFeatureName;
 		CComBSTR dimXpertAnnotationName;
 		std::string dimXpertFeatureNameStr;
 		std::string dimXpertAnnotationNameStr;
-		for (int i = 0; i < itemCount; i++) {
-			result = myaData[i]->QueryInterface(IID_IDimXpertAnnotation, (void**)&myAnnotationData);//为了将IDispatch*类型转为IDimXpertAnnotation*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertAnnotation是要查询的接口类型
+		for (int feIndex = 0; feIndex < featureCount; feIndex++) {
+			result = myfeData[feIndex]->QueryInterface(IID_IDimXpertFeature, (void**)&myFeatureData);//为了将IDispatch*类型转为IDimXpertFeature*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertFeature是要查询的接口类型
 			if (result != S_OK) {
 				CoUninitialize();										
 				return false;
-			}
+			}			
+			swDimXpertFeature = CComPtr<IDimXpertFeature>(myFeatureData);//用构造函数将IDimXpertFeature*普通指针转为CComPtr智能指针			
 			
-			swDimXpertAnnotation = CComPtr<IDimXpertAnnotation>(myAnnotationData);//用构造函数将IDimXpertAnnotation*普通指针转为CComPtr智能指针
-			swDimXpertFeature.Release();//不Release的话，get_Feature(&swDimXpertFeature);会报错
-			result = swDimXpertAnnotation->get_Feature(&swDimXpertFeature);
-			if (result != S_OK) {
-				CoUninitialize();										
-				return false;
-			}
+			//a.获取特征名称
 			result = swDimXpertFeature->get_Name(&dimXpertFeatureName);//result为false？不知为何，但是能读取
 			//if (result != S_OK) {
 			//	CoUninitialize();										
 			//	return false;
 			//}
-			result = swDimXpertAnnotation->get_Name(&dimXpertAnnotationName);
-			//if (result != S_OK) {
-			//	CoUninitialize();										
-			//	return false;
-			//}
+			dimXpertFeatureNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertFeatureName));//BSTR转String(Gbk)(Imgui会乱码)，再转String(Utf8)			
+
+			//存入特征面数组
+			MyFeatureFace featureFace;
+			featureFace.Name = dimXpertFeatureNameStr;
+			myFeatureFaceArray.push_back(featureFace);
+
+			//2.获取标注SAFEARRAY数组的承载体
+			result = swDimXpertFeature->GetAppliedAnnotations(&dimXpertAnnotationVT);
+			if (result != S_OK) {
+				CoUninitialize();										
+				return false;
+			}
+			//读取DimXpert标注的SAFEARRAY
+			LPVOID aData = nullptr;//接收读取后的数组
+			LONG annotationCount;//接收读取后的数组大小
+			if (!ReadSafeArray(&dimXpertAnnotationVT, VT_DISPATCH, 1, &aData, &annotationCount)) {
+				CoUninitialize();
+				return false;
+			}
+			myFeatureFaceArray.back().AnnotationCount = annotationCount;
+			IDispatch** myaData = (IDispatch**)aData;//将数组指针赋与IDispatch**类型的指针数组的指针，与ReadSafeArray类型一致
+			IDimXpertAnnotation* myAnnotationData;//用于获取IDimXpertAnnotation*类型数据
+			for (int aIndex = 0; aIndex < annotationCount; aIndex++) {
+				result = myaData[aIndex]->QueryInterface(IID_IDimXpertAnnotation, (void**)&myAnnotationData);//为了将IDispatch*类型转为IDimXpertAnnotation*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertAnnotation是要查询的接口类型
+				if (result != S_OK) {
+					CoUninitialize();
+					return false;
+				}
+				swDimXpertAnnotation = CComPtr<IDimXpertAnnotation>(myAnnotationData);//用构造函数将IDimXpertAnnotation*普通指针转为CComPtr智能指针
+				
+				//a.获取标注名称
+				result = swDimXpertAnnotation->get_Name(&dimXpertAnnotationName);
+				//if (result != S_OK) {
+				//	CoUninitialize();										
+				//	return false;
+				//}
+				dimXpertAnnotationNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertAnnotationName));
+				
+				//b.获取标注类型
+				swDimXpertAnnotationType_e dimXpertAnnotationType;
+				result = swDimXpertAnnotation->get_Type(&dimXpertAnnotationType);
+				if (result != S_OK) {
+					CoUninitialize();
+					return false;
+				}
+				
+				//c.获取公差
+				ReadAnnotationData(dimXpertAnnotationType);
+
+				//存入特征面数组的标注数组
+				MyAnnotation myAnnotation;
+				myAnnotation.Name = dimXpertAnnotationNameStr;
+				myAnnotation.Type = dimXpertAnnotationType;				
+				myFeatureFaceArray.back().AnnotationArray.push_back(myAnnotation);
+
+			}
 			
-			dimXpertFeatureNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertFeatureName));
-			dimXpertAnnotationNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertAnnotationName));
-			DimXpertMap[dimXpertFeatureNameStr].push_back(dimXpertAnnotationNameStr);
-			
-			//读取DimXpert特征所对应的面
+			//3.读取DimXpert特征所对应的面
 			result = swDimXpertFeature->GetFaces(&faceVT);
 			//读取面的SAFEARRAY
 			LPVOID fData = nullptr;
@@ -485,73 +533,90 @@ namespace MyApp {
 				CoUninitialize();
 				return false;
 			}
-			// here you can cast pData to an array (pointer) of the type you expect
 			IDispatch** myfData = (IDispatch**)fData;
-			// use the data here.
 			IFace2* myFaceData;//用于获取IFace2*类型数据						
-			for (int i = 0; i < faceCount; i++) {
-				result = myfData[i]->QueryInterface(IID_IFace2, (void**)&myFaceData);
+			for (int fIndex = 0; fIndex < faceCount; fIndex++) {
+				result = myfData[fIndex]->QueryInterface(IID_IFace2, (void**)&myFaceData);
 				if (result != S_OK) {
 					CoUninitialize();
 					return false;
 				}
 
+				//a.使SW自动选择当前特征对应的面
 				swFace = CComPtr<IFace2>(myFaceData);
+				swEntity = swFace;
+				VARIANT_BOOL isSelected;
+				swEntity->Select4(VARIANT_FALSE, nullptr, &isSelected);
+
+				//b.保存面为stl文件（当有选中的面时，直接保存时默认保存该面）
+				long error = NOERROR;
+				long warning = NOERROR;
+				VARIANT_BOOL isSaved;
+				CComBSTR saveName = dimXpertFeatureName;
+				//std::string fileIndex = std::to_string(feIndex);//int转string
+				//result = saveName.Append(fileIndex.c_str());
+				result = saveName.Append(".STL");
+				swApp->SetUserPreferenceToggle(swUserPreferenceToggle_e::swSTLDontTranslateToPositive, VARIANT_TRUE);//设置sw导出stl时不正向化坐标系（保留建模的坐标系）
+				swDoc->SaveAs4(saveName, 0, 1, &error, &warning, &isSaved);//保存文件
 				
-				myFaceData->GetBox(&boxVT);//获取包围盒坐标。一共6个值：第一个点的xyz，第二个点的xyz，单位m
-				//读取包围盒的SAFEARRAY
-				LPVOID bData = nullptr;
-				LONG boxCount;
-				if (!ReadSafeArray(&boxVT, VT_R8, 1, &bData, &boxCount)) {
-					CoUninitialize();
-					return false;
-				}
-				// here you can cast pData to an array (pointer) of the type you expect
-				double* mybData = (double*)bData;
-				// use the data here.
-				double myBoxPos1[3] = { 0,0,0 };//用于获取double类型数据	
-				double myBoxPos2[3] = { 0,0,0 };//用于获取double类型数据	
-				for (int i = 0; i < boxCount; i++) {
-					if (i < 3)
-						myBoxPos1[i] = mybData[i];//包围盒点1
-					else
-						myBoxPos2[i - 3] = mybData[i];//包围盒点2
-				}
+				
 
-				double thisPos[3];//目前的投影光线起点
-				double dir[3] = { 1,0,0 };//目前的投影光线方向
-				int sampleCount = 10;//投影采样次数
-				for (int i = 0; i < sampleCount; i++) {
-					thisPos[0] = myBoxPos1[0] + i * (myBoxPos2[0] - myBoxPos1[0]) / sampleCount;
-					thisPos[1] = myBoxPos1[1] + i * (myBoxPos2[1] - myBoxPos1[1]) / sampleCount;
-					thisPos[2] = myBoxPos1[2] + i * (myBoxPos2[2] - myBoxPos1[2]) / sampleCount;
 
-					startPoint.Release();
-					projectDir.Release();
-					interactPoint.Release();
-
-					CreatVARIANTArray(3, VT_R8, thisPos, &startPointVT);//生成VARIANT数组
-					swDispatch.Release();
-					result = swMathUtility->CreatePoint(startPointVT, &swDispatch);//生成点
-					startPoint = swDispatch;
-
-					CreatVARIANTArray(3, VT_R8, dir, &projectDirVT);//生成VARIANT数组
-					swDispatch.Release();
-					result = swMathUtility->CreateVector(projectDirVT, &swDispatch);//生成向量
-					projectDir = swDispatch;
-
-					result = swFace->GetProjectedPointOn(startPoint, projectDir, &interactPoint);//投影，求得的交点单位是m，若未相交为NULL
-					if (interactPoint != NULL) {
-						result = interactPoint->get_ArrayData(&interactPointVT);
-						LPVOID iData = nullptr;
-						LONG iCount;
-						if (ReadSafeArray(&interactPointVT, VT_R8, 1, &iData, &iCount)) {
-							//存数据
-						}
-
-					}
-
-				}
+				//在包围盒范围内向面投影光线 求交点，100个点需要20多秒，太慢了
+				//myFaceData->GetBox(&boxVT);//获取包围盒坐标。一共6个值：第一个点的xyz，第二个点的xyz，单位m
+				////读取包围盒的SAFEARRAY
+				//LPVOID bData = nullptr;
+				//LONG boxCount;
+				//if (!ReadSafeArray(&boxVT, VT_R8, 1, &bData, &boxCount)) {
+				//	CoUninitialize();
+				//	return false;
+				//}
+				//// here you can cast pData to an array (pointer) of the type you expect
+				//double* mybData = (double*)bData;
+				//// use the data here.
+				//double myBoxPos1[3] = { 0,0,0 };//用于获取double类型数据	
+				//double myBoxPos2[3] = { 0,0,0 };//用于获取double类型数据	
+				//for (int i = 0; i < boxCount; i++) {
+				//	if (i < 3)
+				//		myBoxPos1[i] = mybData[i];//包围盒点1
+				//	else
+				//		myBoxPos2[i - 3] = mybData[i];//包围盒点2
+				//}
+				//
+				//double thisPos[3];//目前的投影光线起点
+				//double dir[3] = { 1,0,0 };//目前的投影光线方向
+				//int sampleCount = 10;//投影采样次数
+				//for (int i = 0; i < sampleCount; i++) {
+				//	thisPos[0] = myBoxPos1[0] + i * (myBoxPos2[0] - myBoxPos1[0]) / sampleCount;
+				//	thisPos[1] = myBoxPos1[1] + i * (myBoxPos2[1] - myBoxPos1[1]) / sampleCount;
+				//	thisPos[2] = myBoxPos1[2] + i * (myBoxPos2[2] - myBoxPos1[2]) / sampleCount;
+				//
+				//	startPoint.Release();
+				//	projectDir.Release();
+				//	interactPoint.Release();
+				//
+				//	CreatVARIANTArray(3, VT_R8, thisPos, &startPointVT);//生成VARIANT数组
+				//	swDispatch.Release();
+				//	result = swMathUtility->CreatePoint(startPointVT, &swDispatch);//生成点
+				//	startPoint = swDispatch;
+				//
+				//	CreatVARIANTArray(3, VT_R8, dir, &projectDirVT);//生成VARIANT数组
+				//	swDispatch.Release();
+				//	result = swMathUtility->CreateVector(projectDirVT, &swDispatch);//生成向量
+				//	projectDir = swDispatch;
+				//
+				//	result = swFace->GetProjectedPointOn(startPoint, projectDir, &interactPoint);//投影，求得的交点单位是m，若未相交为NULL
+				//	if (interactPoint != NULL) {
+				//		result = interactPoint->get_ArrayData(&interactPointVT);
+				//		LPVOID iData = nullptr;
+				//		LONG iCount;
+				//		if (ReadSafeArray(&interactPointVT, VT_R8, 1, &iData, &iCount)) {
+				//			//存数据
+				//		}
+				//
+				//	}
+				//
+				//}
 
 
 				
@@ -736,6 +801,71 @@ namespace MyApp {
 		array->parray = psa;
 		return true;
 	}
+
+	void MyApplication::ReadAnnotationData(swDimXpertAnnotationType_e annoType)
+	{
+		if (annoType == swDimXpertAnnotationType_e::swDimXpertDatum) {
+			DatumData();			
+		}
+		else if (GeoTolMap[annoType]>0) {
+			GeoTolData();		
+		}
+		else if (DimTolMap[annoType]>0) {
+			DimTolData(annoType);
+		}
+		else {
+			//类型为unknown
+		}
+		
+	}
+
+	void MyApplication::DatumData()
+	{
+		CComPtr<IDimXpertDatum> datum;
+		datum = swDimXpertAnnotation;
+		CComBSTR identifier;
+		result = datum->get_Identifier(&identifier);//A\B\C
+		
+	}
+
+	void MyApplication::GeoTolData()
+	{
+		CComPtr<IDimXpertTolerance> tolerance;
+		tolerance = swDimXpertAnnotation;
+		double maxTolerance;
+		result = tolerance->get_Tolerance(&maxTolerance);//(平性)0.05(垂直度)0.1(定位1)0.2
+	}
+
+	void MyApplication::DimTolData(swDimXpertAnnotationType_e annoType)
+	{
+		CComPtr<IDimXpertDimensionTolerance> dimensionTolerance;
+		dimensionTolerance = swDimXpertAnnotation;
+
+		double upper = 0;
+		double lower = 0;
+		VARIANT_BOOL boolstatus = VARIANT_FALSE;
+
+		bool isAngleType = false;
+		isAngleType = annoType == swDimXpertAnnotationType_e::swDimXpertDimTol_ConeAngle ? true : false;
+
+		double dbl = 0;
+		dbl = isAngleType ? 57.2957795130823 : 1.0;// conversion for radians to degrees when dimension type is angle
+
+		// the nominal, and upper and lower limits of size of the dimension
+		double nominalValue = 0;
+		result = dimensionTolerance->GetNominalValue(&nominalValue);//名义值,(之间距离1)30 (直径1)10
+		nominalValue *= dbl;
+
+		result = dimensionTolerance->GetUpperAndLowerLimit(&upper, &lower, &boolstatus);//(之间距离1)30.5 29.5 (直径1)10.25 9.75
+		upper *= dbl;
+		lower *= dbl;
+
+		
+	}
+
+	
+		
+	
 
 }
 
