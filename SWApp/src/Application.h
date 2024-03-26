@@ -1,10 +1,11 @@
 #pragma once
 #include <unordered_map>
 #include <map>
-#include <string>
-#include <atlstr.h>
-#include <memory>
-#include <mutex>
+//#include <string>
+//#include <atlstr.h>
+//#include <memory>
+//#include <mutex>
+#include <regex>//正则表达式
 
 //SolidWorks
 #include <atlbase.h> //com
@@ -13,13 +14,30 @@
 #import "swdimxpert.tlb" raw_interfaces_only, raw_native_types, no_namespace, named_guids  //SOLIDWORKS dimxpert library
 
 namespace MyApp {
-	
-	struct MyAnnotation {
-		std::string Name;
-		swDimXpertAnnotationType_e Type;	
-	};//标注
 
-	struct MyFeatureFace {
+	struct MyAnnotation { //若有俩面之间的尺寸公差标注，那么这俩面都具有一样的MyAnnotation，但是定义在不同的MyFaceFeature中
+		std::string Name;
+		swDimXpertAnnotationType_e Type = swDimXpertAnnotationType_unknown;//@
+		
+		//标注基准
+		int isDatum = 0;//@
+		std::string MyDatumName;
+
+		//表面粗糙度
+		int isSFSymbol = 0;//@
+		swSFSymType_e SFSType = swSFBasic;//@
+
+		//公差
+		int isTolerance = 0;//@
+		double AccuracySize = 0;//@
+		int AccuracyLevel = 0;
+		std::vector<std::string> DatumNames;//@size
+		int hasMCM = 0;//@
+		swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;//实体状态，即形位公差标注中的M和L//@
+
+	};//标注 
+
+	struct MyFaceFeature {
 		std::string Name;
 		int AnnotationCount = 0;
 		std::vector<MyAnnotation> AnnotationArray;
@@ -52,44 +70,44 @@ namespace MyApp {
 		long DimXpertAnnotationCount = 0;//MBD标注数
 		long DimXpertFeatureCount = 0;//MBD特征数
 
-		std::vector<MyFeatureFace> myFeatureFaceArray;//记录MBD信息(特征,(标注1，标注2...)
+		std::unordered_map<std::string, MyFaceFeature> FaceMap;//记录MBD信息[面 : 特征(标注1，标注2...)]
 		bool hasMBD = false;//是否检测到MBD信息
 		
 		std::unordered_map<swDimXpertAnnotationType_e, int> GeoTolMap = {
-			 {swDimXpertGeoTol_Angularity              ,1}
-			,{swDimXpertGeoTol_Circularity			   ,1}
-			,{swDimXpertGeoTol_CircularRunout		   ,1}
-			,{swDimXpertGeoTol_CompositeLineProfile	   ,1}
-			,{swDimXpertGeoTol_CompositePosition	   ,1}
-			,{swDimXpertGeoTol_CompositeSurfaceProfile ,1}
-			,{swDimXpertGeoTol_Concentricity		   ,1}
-			,{swDimXpertGeoTol_Cylindricity			   ,1}
-			,{swDimXpertGeoTol_Flatness				   ,1}
-			,{swDimXpertGeoTol_LineProfile			   ,1}
-			,{swDimXpertGeoTol_Parallelism			   ,1}
-			,{swDimXpertGeoTol_Perpendicularity		   ,1}
-			,{swDimXpertGeoTol_Position				   ,1}
-			,{swDimXpertGeoTol_Straightness			   ,1}
-			,{swDimXpertGeoTol_SurfaceProfile		   ,1}
-			,{swDimXpertGeoTol_Symmetry				   ,1}
-			,{swDimXpertGeoTol_Tangency				   ,1}
-			,{swDimXpertGeoTol_TotalRunout			   ,1}
+			 {swDimXpertGeoTol_Angularity              ,2}//倾斜度M
+			,{swDimXpertGeoTol_Circularity			   ,1}//圆度
+			,{swDimXpertGeoTol_CircularRunout		   ,1}//圆跳动度
+			,{swDimXpertGeoTol_CompositeLineProfile	   ,1}//复合 线轮廓度？
+			,{swDimXpertGeoTol_CompositePosition	   ,2}//复合 位置度M？
+			,{swDimXpertGeoTol_CompositeSurfaceProfile ,1}//复合 面轮廓度？
+			,{swDimXpertGeoTol_Concentricity		   ,2}//同心度、同轴度M
+			,{swDimXpertGeoTol_Cylindricity			   ,1}//圆柱度
+			,{swDimXpertGeoTol_Flatness				   ,1}//平面度
+			,{swDimXpertGeoTol_LineProfile			   ,1}//线轮廓度
+			,{swDimXpertGeoTol_Parallelism			   ,2}//平行度M
+			,{swDimXpertGeoTol_Perpendicularity		   ,2}//垂直度M
+			,{swDimXpertGeoTol_Position				   ,2}//位置度M
+			,{swDimXpertGeoTol_Straightness			   ,2}//直线度M
+			,{swDimXpertGeoTol_SurfaceProfile		   ,1}//面轮廓度
+			,{swDimXpertGeoTol_Symmetry				   ,2}//对称度M
+			,{swDimXpertGeoTol_Tangency				   ,1}//切线度？
+			,{swDimXpertGeoTol_TotalRunout			   ,1}//全跳动
 		};//MBD标注类型集合：形位公差
 		std::unordered_map<swDimXpertAnnotationType_e, int> DimTolMap = {
-			 {swDimXpertDimTol_AngleBetween            ,1}
-			,{swDimXpertDimTol_ChamferDimension		   ,1}
-			,{swDimXpertDimTol_CompositeDistanceBetween,1}
-			,{swDimXpertDimTol_ConeAngle			   ,1}
-			,{swDimXpertDimTol_CounterBore			   ,1}
-			,{swDimXpertDimTol_CounterSinkAngle		   ,1}
-			,{swDimXpertDimTol_CounterSinkDiameter	   ,1}
-			,{swDimXpertDimTol_Depth				   ,1}
-			,{swDimXpertDimTol_Diameter				   ,1}
-			,{swDimXpertDimTol_DistanceBetween		   ,1}
-			,{swDimXpertDimTol_Length				   ,1}
-			,{swDimXpertDimTol_PatternAngleBetween	   ,1}
-			,{swDimXpertDimTol_Radius				   ,1}
-			,{swDimXpertDimTol_Width				   ,1}
+			 {swDimXpertDimTol_AngleBetween            ,1}//面间夹角公差
+			,{swDimXpertDimTol_ChamferDimension		   ,1}//倒角公差
+			,{swDimXpertDimTol_CompositeDistanceBetween,1}//面间混合距离公差？
+			,{swDimXpertDimTol_ConeAngle			   ,1}//圆锥角公差
+			,{swDimXpertDimTol_CounterBore			   ,1}//反向钻孔公差
+			,{swDimXpertDimTol_CounterSinkAngle		   ,1}//反向沉头角度公差
+			,{swDimXpertDimTol_CounterSinkDiameter	   ,1}//反向沉头直径公差
+			,{swDimXpertDimTol_Depth				   ,1}//深度公差
+			,{swDimXpertDimTol_Diameter				   ,1}//直径公差
+			,{swDimXpertDimTol_DistanceBetween		   ,1}//面间距离公差
+			,{swDimXpertDimTol_Length				   ,1}//长度公差
+			,{swDimXpertDimTol_PatternAngleBetween	   ,1}//图案间角度公差
+			,{swDimXpertDimTol_Radius				   ,1}//半径公差
+			,{swDimXpertDimTol_Width				   ,1}//宽度公差
 		};//MBD标注类型集合：尺寸公差
 			
 		void EnableDocking();//开启Docking特性
@@ -105,11 +123,12 @@ namespace MyApp {
 		bool ReadSafeArray(VARIANT* vt, VARENUM vtType, int dimensional, LPVOID* pData, LONG* itemCount);//读取SAFEARRAY数组(输入VARIANT变量，数组元素类型，数组维度，输出数组，输出数组大小)
 		template<typename T>
 		bool CreatVARIANTArray(int size, VARENUM type, T* buffer, VARIANT* array);//创建含SAFEARRAY的VARIANT变量(数组大小，数组元素类型，输入数组，输出VARIANT变量)
-		void ReadAnnotationData(swDimXpertAnnotationType_e annoType);//读取标注数据
-
-		void DatumData();//读取基准信息
-		void GeoTolData();//读取形位公差数据
-		void DimTolData(swDimXpertAnnotationType_e annoType);//读取尺寸公差数据
+		double ReadDoubleFromString(std::string textstr);//读取字符串中的小数，如6.3
+		
+		void ReadAnnotationData(swDimXpertAnnotationType_e annoType,double* toleranceSize, int* toleranceLevel,std::string* myDatumName, std::vector<std::string>& datumNames,swDimXpertMaterialConditionModifier_e* MCMType);//读取标注数据
+		void DatumData(std::string* myDatumName);//读取基准信息
+		void GeoTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, std::vector<std::string>& datumNames, swDimXpertMaterialConditionModifier_e* MCMType);//读取形位公差数据
+		void DimTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel);//读取尺寸公差数据
 	
 	public:
 		void ShowMyApp();

@@ -31,6 +31,13 @@ namespace MyApp {
 	//RIANT interactPointVT;//用于生成投影光线与面的交点的SAFEARRAY数组的载体
 	CComPtr<IEntity> swEntity;//面的实体
 
+	CComPtr<IModelDocExtension> swDocE;//swDoc的拓展版（需由swDoc来get），可获取一些新函数
+	CComPtr<IAnnotation> swAnnotation;//sw的标注
+	VARIANT swAnnotationVT;//获取sw的标注的SAFEARRAY数组的载体
+	VARIANT entityVT;//获取实体的SAFEARRAY数组的载体
+	CComPtr<ISFSymbol> swSFSymbol;//表面粗糙度
+
+
 	
 
 	HRESULT result = NOERROR; //存储函数的输出结果
@@ -137,10 +144,21 @@ namespace MyApp {
 				ImGui::Text("MBD特征总数:%d", DimXpertFeatureCount);
 				ImGui::Text("MBD标注总数:%d", DimXpertAnnotationCount);
 				ImGui::Separator();
-				for (auto feature : myFeatureFaceArray) {
-					if (ImGui::TreeNode(feature.Name.c_str())) {
-						for (auto annotation : feature.AnnotationArray) {
+				for (auto feature : FaceMap) {
+					if (ImGui::TreeNode(feature.second.Name.c_str())) {
+						for (auto annotation : feature.second.AnnotationArray) {
 							ImGui::Text(annotation.Name.c_str());
+							ImGui::BulletText("标注类型:%i",annotation.Type);
+							if (annotation.Type != swDimXpertDatum) {
+								ImGui::BulletText("标注公差大小:%f", annotation.AccuracySize);
+								ImGui::BulletText("标注公差等级:%d", annotation.AccuracyLevel);
+								for (auto datum : annotation.DatumNames) {
+									ImGui::BulletText(("标注公差基准:" + datum).c_str());
+								}
+								if (annotation.MCMType != swDimXpertMaterialConditionModifier_unknown) {
+									ImGui::BulletText("材料实体状态:%i", annotation.MCMType);
+								}
+							}							
 						}
 						ImGui::TreePop();
 						ImGui::Separator();
@@ -401,8 +419,7 @@ namespace MyApp {
 	bool MyApplication::ReadMBD()
 	{
 		//步骤：swDoc->swConfiguration->swDimXpertManager->swDimXpertPart->Feature->Annotation
-		myFeatureFaceArray.clear();	
-
+		FaceMap.clear();
 		swConfiguration.Release();
 		result = swDoc->IGetActiveConfiguration(&swConfiguration);//获取swConfiguration
 		if (result != S_OK) {
@@ -469,9 +486,8 @@ namespace MyApp {
 			dimXpertFeatureNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertFeatureName));//BSTR转String(Gbk)(Imgui会乱码)，再转String(Utf8)			
 
 			//存入特征面数组
-			MyFeatureFace featureFace;
-			featureFace.Name = dimXpertFeatureNameStr;
-			myFeatureFaceArray.push_back(featureFace);
+			MyFaceFeature faceFeature;
+			faceFeature.Name = dimXpertFeatureNameStr;
 
 			//2.获取标注SAFEARRAY数组的承载体
 			result = swDimXpertFeature->GetAppliedAnnotations(&dimXpertAnnotationVT);
@@ -486,7 +502,7 @@ namespace MyApp {
 				CoUninitialize();
 				return false;
 			}
-			myFeatureFaceArray.back().AnnotationCount = annotationCount;
+			faceFeature.AnnotationCount = annotationCount;
 			IDispatch** myaData = (IDispatch**)aData;//将数组指针赋与IDispatch**类型的指针数组的指针，与ReadSafeArray类型一致
 			IDimXpertAnnotation* myAnnotationData;//用于获取IDimXpertAnnotation*类型数据
 			for (int aIndex = 0; aIndex < annotationCount; aIndex++) {
@@ -514,13 +530,26 @@ namespace MyApp {
 				}
 				
 				//c.获取公差
-				ReadAnnotationData(dimXpertAnnotationType);
+				double toleranceSize = 0;
+				int toleranceLevel = 0;
+				std::string myDatumName;
+				std::vector<std::string> datumNames;
+				swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;
+				ReadAnnotationData(dimXpertAnnotationType, &toleranceSize, &toleranceLevel, &myDatumName, datumNames,&MCMType);//可以返回公差等级（1.轴/孔 2.线性尺寸 3.形位公差 三者等级定义不同）
 
 				//存入特征面数组的标注数组
 				MyAnnotation myAnnotation;
 				myAnnotation.Name = dimXpertAnnotationNameStr;
-				myAnnotation.Type = dimXpertAnnotationType;				
-				myFeatureFaceArray.back().AnnotationArray.push_back(myAnnotation);
+				myAnnotation.Type = dimXpertAnnotationType;	
+				myAnnotation.isTolerance = dimXpertAnnotationType != swDimXpertDatum ? 1 : 0;
+				myAnnotation.AccuracySize = toleranceSize;
+				myAnnotation.AccuracyLevel = toleranceLevel;
+				myAnnotation.isDatum = dimXpertAnnotationType == swDimXpertDatum ? 1 : 0;
+				myAnnotation.MyDatumName = myDatumName;
+				myAnnotation.DatumNames = datumNames;
+				myAnnotation.hasMCM = MCMType != swDimXpertMaterialConditionModifier_unknown ? 1 : 0;
+				myAnnotation.MCMType = MCMType;
+				faceFeature.AnnotationArray.push_back(myAnnotation);
 
 			}
 			
@@ -552,13 +581,27 @@ namespace MyApp {
 				long error = NOERROR;
 				long warning = NOERROR;
 				VARIANT_BOOL isSaved;
-				CComBSTR saveName = dimXpertFeatureName;
-				//std::string fileIndex = std::to_string(feIndex);//int转string
-				//result = saveName.Append(fileIndex.c_str());
+				CComBSTR saveName = "";
+				std::string fileIndex = std::to_string(feIndex);//int转string
+				result = saveName.Append(fileIndex.c_str());
+				result = saveName.Append("_");
+				result = saveName.Append(dimXpertFeatureName);
+
+				swEntity->put_ModelName(saveName);
+				std::string faceName = GbkToUtf8(_com_util::ConvertBSTRToString(saveName));
+				FaceMap[faceName] = faceFeature;
+
 				result = saveName.Append(".STL");
-				swApp->SetUserPreferenceToggle(swUserPreferenceToggle_e::swSTLDontTranslateToPositive, VARIANT_TRUE);//设置sw导出stl时不正向化坐标系（保留建模的坐标系）
-				swDoc->SaveAs4(saveName, 0, 1, &error, &warning, &isSaved);//保存文件
-				
+				result = swApp->SetUserPreferenceToggle(swUserPreferenceToggle_e::swSTLDontTranslateToPositive, VARIANT_TRUE);//设置sw导出stl时不正向化坐标系（保留建模的坐标系）
+				if (result != S_OK) {
+					CoUninitialize();
+					return false;
+				}
+				result = swDoc->SaveAs4(saveName, 0, 1, &error, &warning, &isSaved);//保存文件
+				if (result != S_OK) {
+					CoUninitialize();
+					return false;
+				}
 				
 
 
@@ -629,7 +672,127 @@ namespace MyApp {
 			
 		}
 		
+		//4.获取表面粗糙度		
+		result = swDoc->get_Extension(&swDocE);
+		if (result != S_OK) {
+			CoUninitialize();
+			return false;
+		}
+		result = swDocE->GetAnnotations(&swAnnotationVT);
+		if (result != S_OK) {
+			CoUninitialize();
+			return false;
+		}
+
+		//读取SW标注的SAFEARRAY
+		LPVOID swaData = nullptr;
+		LONG swaCount;
+		if (!ReadSafeArray(&swAnnotationVT, VT_DISPATCH, 1, &swaData, &swaCount)) {
+			CoUninitialize();
+			return false;
+		}
+		IDispatch** myswaData = (IDispatch**)swaData;
+		IAnnotation* myswAnnotationsData;//用于获取IAnnotation*类型数据
+		for (int swaIndex = 0; swaIndex < swaCount; swaIndex++) {
+			result = myswaData[swaIndex]->QueryInterface(IID_IAnnotation, (void**)&myswAnnotationsData);
+			if (result != S_OK) {
+				CoUninitialize();
+				return false;
+			}
+			swAnnotation = CComPtr<IAnnotation>(myswAnnotationsData);
+
+			//a.判断当前标注是否是表面粗糙度
+			long swAnnotationType;
+			result = swAnnotation->GetType(&swAnnotationType);
+			if (result != S_OK) {
+				CoUninitialize();
+				return false;
+			}
+			if (swAnnotationType == swAnnotationType_e::swSFSymbol) {//是否是粗糙度标注
+				long entityType;
+				swDispatch.Release();
+				result = swAnnotation->IGetAttachedEntityTypes(&entityType);
+				if (result != S_OK) {
+					CoUninitialize();
+					return false;
+				}
+				if (entityType == swSelectType_e::swSelFACES) {//实体是否是面
+					result = swAnnotation->GetAttachedEntities(&entityVT);
+					if (result != S_OK) {
+						CoUninitialize();
+						return false;
+					}
+					//读取entity的SAFEARRAY
+					LPVOID eData = nullptr;
+					LONG eCount;
+					if (!ReadSafeArray(&entityVT, VT_DISPATCH, 1, &eData, &eCount)) {
+						CoUninitialize();
+						return false;
+					}
+					IDispatch** myeData = (IDispatch**)eData;
+					IEntity* myEntityData;//用于获取IEntity*类型数据
+					for (int eIndex = 0; eIndex < eCount; eIndex++) {
+						result = myeData[eIndex]->QueryInterface(IID_IEntity, (void**)&myEntityData);
+						if (result != S_OK) {
+							CoUninitialize();
+							return false;
+						}
+						swEntity = CComPtr<IEntity>(myEntityData);
+
+						//b.获取该表面粗糙度所属的面
+						CComBSTR entityName;
+						result = swEntity->get_ModelName(&entityName);
+						if (result != S_OK) {
+							CoUninitialize();
+							return false;
+						}
+						std::string faceName = GbkToUtf8(_com_util::ConvertBSTRToString(entityName));
+						
+						//c.获取该表面粗糙度的数据
+						result = swAnnotation->GetSpecificAnnotation(&swDispatch);//获取特定标注
+						if (result != S_OK) {
+							CoUninitialize();
+							return false;
+						}
+						swSFSymbol = swDispatch;//特定标注转化为表面粗糙度
+						long SFSymbolType;//swSFSymType_e
+						result = swSFSymbol->GetSymbol(&SFSymbolType);
+						if (result != S_OK) {
+							CoUninitialize();
+							return false;
+						}
+						CComBSTR text;
+						result = swSFSymbol->GetTextAtIndex(0, &text);//获取第一个文本
+						if (result != S_OK) {
+							CoUninitialize();
+							return false;
+						}
+						std::string textstr = GbkToUtf8(_com_util::ConvertBSTRToString(text));
+						double SFSymbolSize = ReadDoubleFromString(textstr);//获取粗糙度数值
+
+						//d.添加至所属的面特征中
+						if (FaceMap.count(faceName) > 0) {
+							MyAnnotation SFSAnnotation;
+							SFSAnnotation.isSFSymbol = 1;
+							SFSAnnotation.Name = "粗糙度" + textstr;
+							SFSAnnotation.AccuracySize = SFSymbolSize;
+							SFSAnnotation.AccuracyLevel = 1;
+							SFSAnnotation.SFSType = (swSFSymType_e)SFSymbolType;
+							FaceMap[faceName].AnnotationArray.push_back(SFSAnnotation);
+							FaceMap[faceName].AnnotationCount++;
+						}
+						
+						
+
+
+					}
+				}
+			}
+			
+		}
+
 		
+
 
 
 		//获取建模的特征（非DimXpert）
@@ -802,16 +965,30 @@ namespace MyApp {
 		return true;
 	}
 
-	void MyApplication::ReadAnnotationData(swDimXpertAnnotationType_e annoType)
+	double MyApplication::ReadDoubleFromString(std::string textstr)
+	{
+		std::regex pattern("\\d+[.]\\d");	//1开头，后面[3578]中的一个，九个数字
+		std::string::const_iterator iter_begin = textstr.cbegin();
+		std::string::const_iterator iter_end = textstr.cend();
+		std::smatch matchResult;
+		if (std::regex_search(iter_begin, iter_end, matchResult, pattern)) {
+			return std::stod(matchResult[0]);
+		}
+		else {
+			return 666;
+		}
+	}
+
+	void MyApplication::ReadAnnotationData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, std::string* myDatumName, std::vector<std::string>& datumNames, swDimXpertMaterialConditionModifier_e* MCMType)
 	{
 		if (annoType == swDimXpertAnnotationType_e::swDimXpertDatum) {
-			DatumData();			
+			DatumData(myDatumName);
 		}
 		else if (GeoTolMap[annoType]>0) {
-			GeoTolData();		
+			GeoTolData(annoType, toleranceSize, toleranceLevel, datumNames, MCMType);
 		}
 		else if (DimTolMap[annoType]>0) {
-			DimTolData(annoType);
+			DimTolData(annoType, toleranceSize, toleranceLevel);
 		}
 		else {
 			//类型为unknown
@@ -819,24 +996,90 @@ namespace MyApp {
 		
 	}
 
-	void MyApplication::DatumData()
+	void MyApplication::DatumData(std::string* datumName)
 	{
 		CComPtr<IDimXpertDatum> datum;
 		datum = swDimXpertAnnotation;
 		CComBSTR identifier;
 		result = datum->get_Identifier(&identifier);//A\B\C
+		*datumName = GbkToUtf8(_com_util::ConvertBSTRToString(identifier));
 		
 	}
 
-	void MyApplication::GeoTolData()
+	void MyApplication::GeoTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, std::vector<std::string>& datumNames, swDimXpertMaterialConditionModifier_e* MCMType)
 	{
 		CComPtr<IDimXpertTolerance> tolerance;
 		tolerance = swDimXpertAnnotation;
-		double maxTolerance;
-		result = tolerance->get_Tolerance(&maxTolerance);//(平性)0.05(垂直度)0.1(定位1)0.2
+		result = tolerance->get_Tolerance(toleranceSize);//(平性)0.05(垂直度)0.1(定位1)0.2
+		*toleranceLevel = 1;//需用国标判断,需要知道面的尺寸才能知道公差等级
+
+		long primaryCount;
+		long secondaryCount;
+		long tertiaryCount;
+		CComPtr<IDimXpertDatum> datum;
+		CComBSTR identifier;
+		result = tolerance->GetPrimaryDatumCount(&primaryCount);
+		if(primaryCount >0) {
+			datum.Release();
+			result = tolerance->IGetPrimaryDatums(primaryCount, &datum);			
+			result = datum->get_Identifier(&identifier);//A
+			datumNames.push_back(GbkToUtf8(_com_util::ConvertBSTRToString(identifier)));
+		}
+		result = tolerance->GetSecondaryDatumCount(&secondaryCount);
+		if (secondaryCount > 0) {
+			datum.Release();
+			result = tolerance->IGetSecondaryDatums(secondaryCount, &datum);
+			result = datum->get_Identifier(&identifier);//A
+			datumNames.push_back(GbkToUtf8(_com_util::ConvertBSTRToString(identifier)));
+		}
+		result = tolerance->GetTertiaryDatumCount(&tertiaryCount);
+		if (tertiaryCount > 0) {
+			datum.Release();
+			result = tolerance->IGetTertiaryDatums(tertiaryCount, &datum);
+			result = datum->get_Identifier(&identifier);//A
+			datumNames.push_back(GbkToUtf8(_com_util::ConvertBSTRToString(identifier)));
+		}
+		if (GeoTolMap[annoType] > 1) {
+			CComPtr<IDimXpertPositionTolerance> tol1;
+			CComPtr<IDimXpertCompositePositionTolerance> tol2;
+			CComPtr<IDimXpertSymmetryTolerance> tol3;
+			CComPtr<IDimXpertConcentricityTolerance> tol4;
+			CComPtr<IDimXpertStraightnessTolerance> tol5;
+			CComPtr<IDimXpertOrientationTolerance> tol678;
+			switch (annoType)
+			{
+			case swDimXpertGeoTol_Position:
+				tol1 = swDimXpertAnnotation;
+				result = tol1->get_Modifier(MCMType);
+				break;
+			case swDimXpertGeoTol_CompositePosition:
+				tol2 = swDimXpertAnnotation;
+				result = tol2->get_Modifier(MCMType);
+				break;
+			case swDimXpertGeoTol_Symmetry:
+				tol3 = swDimXpertAnnotation;
+				result = tol3->get_Modifier(MCMType);
+				break;
+			case swDimXpertGeoTol_Concentricity:
+				tol4 = swDimXpertAnnotation;
+				result = tol4->get_Modifier(MCMType);
+				break;
+			case swDimXpertGeoTol_Straightness:
+				tol5 = swDimXpertAnnotation;
+				result = tol5->get_Modifier(MCMType);
+				break;
+			default:
+				tol678 = swDimXpertAnnotation;
+				result = tol678->get_Modifier(MCMType);
+				break;
+			}
+
+		}
+		
+		
 	}
 
-	void MyApplication::DimTolData(swDimXpertAnnotationType_e annoType)
+	void MyApplication::DimTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel)
 	{
 		CComPtr<IDimXpertDimensionTolerance> dimensionTolerance;
 		dimensionTolerance = swDimXpertAnnotation;
@@ -860,7 +1103,9 @@ namespace MyApp {
 		upper *= dbl;
 		lower *= dbl;
 
-		
+		//if(annoType == )
+		*toleranceSize = upper - lower;
+		*toleranceLevel = 1;//需用国标判断，需要区分轴/孔和基本尺寸，还需知道面尺寸
 	}
 
 	
