@@ -34,7 +34,8 @@ namespace MyApp {
 	CComPtr<IModelDocExtension> swDocE;//swDoc的拓展版（需由swDoc来get），可获取一些新函数
 	CComPtr<IAnnotation> swAnnotation;//sw的标注
 	VARIANT swAnnotationVT;//获取sw的标注的SAFEARRAY数组的载体
-	VARIANT entityVT;//获取实体的SAFEARRAY数组的载体
+	CComPtr<IEntity> SFSEntity;//面的实体
+	VARIANT SFSEntityVT;//获取实体的SAFEARRAY数组的载体
 	CComPtr<ISFSymbol> swSFSymbol;//表面粗糙度
 
 
@@ -54,18 +55,24 @@ namespace MyApp {
         ImGui::Begin("SolidWorks API");
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		
+		//文件路径
+		ImGui::InputText(".SLDPRT", InputName, 64);
+
 		//连接SW按钮
 		if (ImGui::Button("连接SW")) {			
 			myState = ConnectSW() ? MyState::Succeed : MyState::Failed;
 			SWStateMap[SWState::Connected] = myState;
-			ImGui::OpenPopup("提示");
+			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::Connected]].c_str());
 
 		//打开文件按钮
 		if (ImGui::Button("打开文件")) {
+			SWStateMap[SWState::PropertyGot] = MyState::Nothing;
+			SWStateMap[SWState::MBDGot] = MyState::Nothing;
 			if (SWStateMap[SWState::Connected] == MyState::Succeed) {
+				CADName = InputName;
 				myState = OpenFile() ? MyState::Succeed : MyState::Failed;
 				SWStateMap[SWState::FileOpen] = myState;
 			}
@@ -73,7 +80,7 @@ namespace MyApp {
 				myState = MyState::Nothing;
 				SWStateMap[SWState::FileOpen] = myState;
 			}
-			ImGui::OpenPopup("提示");
+			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::FileOpen]].c_str());
@@ -82,7 +89,6 @@ namespace MyApp {
 		if (ImGui::Button("读取属性")) {
 			if (SWStateMap[SWState::Connected] == MyState::Succeed && SWStateMap[SWState::FileOpen] == MyState::Succeed) {
 				myState = ReadProperty() ? MyState::Succeed : MyState::Failed;
-				hasProperty = myState == MyState::Succeed ? true : false;
 				SWStateMap[SWState::PropertyGot] = myState;
 			}
 			else
@@ -90,7 +96,7 @@ namespace MyApp {
 				myState = MyState::Nothing;
 				SWStateMap[SWState::PropertyGot] = myState;
 			}
-			ImGui::OpenPopup("提示");
+			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::PropertyGot]].c_str());
@@ -99,7 +105,6 @@ namespace MyApp {
 		if (ImGui::Button("读取MBD特征及其标注")) {
 			if (SWStateMap[SWState::Connected] == MyState::Succeed && SWStateMap[SWState::FileOpen] == MyState::Succeed) {
 				myState = ReadMBD() ? MyState::Succeed : MyState::Failed;
-				hasMBD = myState == MyState::Succeed ? true : false;
 				SWStateMap[SWState::MBDGot] = myState;
 			}
 			else
@@ -107,16 +112,19 @@ namespace MyApp {
 				myState = MyState::Nothing;
 				SWStateMap[SWState::MBDGot] = myState;
 			}
-			ImGui::OpenPopup("提示");
+			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::MBDGot]].c_str());
 
+		//选择是否在读取MBD时导出模型
+		ImGui::Checkbox("读取MBD时导出模型", &toSave);
+
 		//显示弹窗
-		ShowMessage(MyStateMessage[(int)myState].c_str());
+		//ShowMessage(MyStateMessage[(int)myState].c_str());
 		
 		//显示属性
-		if (hasProperty) {
+		if (SWStateMap[SWState::PropertyGot] == MyState::Succeed) {
 			if (ImGui::CollapsingHeader("属性")) {
 				if (ImGui::TreeNode("自定义属性")){
 					for (auto p : property) {
@@ -139,7 +147,7 @@ namespace MyApp {
 		}
 
 		//显示MBD
-		if (hasMBD) {
+		if (SWStateMap[SWState::MBDGot] == MyState::Succeed) {
 			if (ImGui::CollapsingHeader("MBD特征及其标注")){					
 				ImGui::Text("MBD特征总数:%d", DimXpertFeatureCount);
 				ImGui::Text("MBD标注总数:%d", DimXpertAnnotationCount);
@@ -179,7 +187,7 @@ namespace MyApp {
     void  MyApplication::EnableDocking()
     {
         
-        static bool opt_fullscreen = true;
+        static bool opt_fullscreen = false;//false时可关闭ImGui背景
         static bool opt_padding = false;
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
@@ -214,7 +222,7 @@ namespace MyApp {
         // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
         if (!opt_padding)
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-        ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+        ImGui::Begin("SWApp", nullptr, window_flags);
         if (!opt_padding)
             ImGui::PopStyleVar();
 
@@ -332,19 +340,19 @@ namespace MyApp {
 			CoUninitialize();
 			return false;
 		}
-		//MathUtility.Release();
-		//sult = swApp->IGetMathUtility(&swMathUtility);//由swApp初始化swMathUtility
-		//if (result != S_OK) {
-		//	CoUninitialize();
-		//	return false;
-		//}
 		return true;
 	}
 
 	bool MyApplication::OpenFile()
 	{
+		//当已经打开过文件时，先关掉现有文件
+		if (SWStateMap[SWState::FileOpen] == MyState::Succeed) { 
+			VARIANT_BOOL allClosed;
+			result = swApp->CloseAllDocuments(VARIANT_TRUE, &allClosed);
+		}
+
 		// Open Selected file             
-		CComBSTR fileName = "D:/Projects/SWApp/SolidWorks Part/base.SLDPRT";
+		CComBSTR fileName = (CADPath + CADName + CADType).c_str();
 		long error = NOERROR;
 		long warning = NOERROR;
 
@@ -354,16 +362,6 @@ namespace MyApp {
 
 		if (result!=S_OK || error != NOERROR)
 		{
-			// COM Style String for message to user
-			//_messageToUser = (L"Failed to open document.\nPlease try again.");
-			//
-			//// Send a message to user and store the return value in _lMessageResult by referencing it
-			//swApp->SendMsgToUser2(_messageToUser, swMessageBoxIcon_e::swMbInformation, swMessageBoxBtn_e::swMbOk, &_lMessageResult);
-			//
-			//// Visible the Solidworks
-			//swApp->put_Visible(VARIANT_TRUE);
-
-			// Stop COM 
 			CoUninitialize();
 			return false;
 		}
@@ -418,8 +416,13 @@ namespace MyApp {
 
 	bool MyApplication::ReadMBD()
 	{
+		//首先新建以该CAD文件命名的文件夹，供后续保存模型用
+		if (toSave) {
+			bool flag = CreateDirectory((CADPath + CADName).c_str(), NULL);
+		}
+
 		//步骤：swDoc->swConfiguration->swDimXpertManager->swDimXpertPart->Feature->Annotation
-		FaceMap.clear();
+		FaceMap.clear();//清空面哈希表
 		swConfiguration.Release();
 		result = swDoc->IGetActiveConfiguration(&swConfiguration);//获取swConfiguration
 		if (result != S_OK) {
@@ -439,11 +442,11 @@ namespace MyApp {
 			return false;
 		}
 		swDimXpertPart = swDispatch;//转化为具体接口类型
-		result = swDimXpertPart->GetFeatureCount(&DimXpertFeatureCount);//获取特征数量
-		if (result != S_OK) {
-			CoUninitialize();
-			return false;
-		}
+		//result = swDimXpertPart->GetFeatureCount(&DimXpertFeatureCount);//获取特征数量（*过时*）（由于模型存在一些奇怪的没有注解的不明特征）
+		//if (result != S_OK) {
+		//	CoUninitialize();
+		//	return false;
+		//}
 		result = swDimXpertPart->GetAnnotationCount(&DimXpertAnnotationCount);//读取标注数量
 		if (result != S_OK) {
 			CoUninitialize();			
@@ -499,8 +502,12 @@ namespace MyApp {
 			LPVOID aData = nullptr;//接收读取后的数组
 			LONG annotationCount;//接收读取后的数组大小
 			if (!ReadSafeArray(&dimXpertAnnotationVT, VT_DISPATCH, 1, &aData, &annotationCount)) {
-				CoUninitialize();
-				return false;
+				//CoUninitialize();
+				//return false;
+				continue;//有时dimXpertAnnotationVT是空的
+			}
+			if (aData == nullptr) {
+				continue;//Realease模式下ReadSafeArray判断一直失误，不明原因
 			}
 			faceFeature.AnnotationCount = annotationCount;
 			IDispatch** myaData = (IDispatch**)aData;//将数组指针赋与IDispatch**类型的指针数组的指针，与ReadSafeArray类型一致
@@ -575,33 +582,15 @@ namespace MyApp {
 				swFace = CComPtr<IFace2>(myFaceData);
 				swEntity = swFace;
 				VARIANT_BOOL isSelected;
-				swEntity->Select4(VARIANT_FALSE, nullptr, &isSelected);
-
-				//b.保存面为stl文件（当有选中的面时，直接保存时默认保存该面）
-				long error = NOERROR;
-				long warning = NOERROR;
-				VARIANT_BOOL isSaved;
-				CComBSTR saveName = "";
-				std::string fileIndex = std::to_string(feIndex);//int转string
-				result = saveName.Append(fileIndex.c_str());
-				result = saveName.Append("_");
-				result = saveName.Append(dimXpertFeatureName);
-
-				swEntity->put_ModelName(saveName);
-				std::string faceName = GbkToUtf8(_com_util::ConvertBSTRToString(saveName));
-				FaceMap[faceName] = faceFeature;
-
-				result = saveName.Append(".STL");
-				result = swApp->SetUserPreferenceToggle(swUserPreferenceToggle_e::swSTLDontTranslateToPositive, VARIANT_TRUE);//设置sw导出stl时不正向化坐标系（保留建模的坐标系）
-				if (result != S_OK) {
-					CoUninitialize();
-					return false;
+				if (fIndex > 0) {
+					swEntity->Select4(VARIANT_TRUE, nullptr, &isSelected);
 				}
-				result = swDoc->SaveAs4(saveName, 0, 1, &error, &warning, &isSaved);//保存文件
-				if (result != S_OK) {
-					CoUninitialize();
-					return false;
+				else {
+					swEntity->Select4(VARIANT_FALSE, nullptr, &isSelected);
 				}
+
+				
+				
 				
 
 
@@ -667,12 +656,43 @@ namespace MyApp {
 				
 				
 			}
+
+			//b.给面命名，并以该命名将特征存入面哈希表				
+			CComBSTR faceName = "";
+			std::string fileIndex = std::to_string(feIndex);//int转string
+			result = faceName.Append(fileIndex.c_str());
+			result = faceName.Append("_");
+			result = faceName.Append(dimXpertFeatureName);
+			swEntity->put_ModelName(faceName);
+			std::string FaceName = GbkToUtf8(_com_util::ConvertBSTRToString(faceName));
+			FaceMap[FaceName] = faceFeature;
+
+			//c.保存面为stl文件（当有选中的面时，直接保存时默认保存该面）
+			if (toSave) {
+				long error = NOERROR;
+				long warning = NOERROR;
+				VARIANT_BOOL isSaved;
+				result = faceName.Append(".STL");
+				CComBSTR savePath = (CADPath + CADName + "\\").c_str();
+				result = savePath.Append(faceName);
+				result = swApp->SetUserPreferenceToggle(swUserPreferenceToggle_e::swSTLDontTranslateToPositive, VARIANT_TRUE);//设置sw导出stl时不正向化坐标系（保留建模的坐标系）
+				if (result != S_OK) {
+					CoUninitialize();
+					return false;
+				}
+				result = swDoc->SaveAs4(savePath, swSaveAsCurrentVersion, swSaveAsOptions_Silent, &error, &warning, &isSaved);//保存文件
+				if (result != S_OK) {
+					CoUninitialize();
+					return false;
+				}
+			}
 			
 			
 			
 		}
 		
 		//4.获取表面粗糙度		
+		swDocE.Release();
 		result = swDoc->get_Extension(&swDocE);
 		if (result != S_OK) {
 			CoUninitialize();
@@ -717,7 +737,7 @@ namespace MyApp {
 					return false;
 				}
 				if (entityType == swSelectType_e::swSelFACES) {//实体是否是面
-					result = swAnnotation->GetAttachedEntities(&entityVT);
+					result = swAnnotation->GetAttachedEntities(&SFSEntityVT);
 					if (result != S_OK) {
 						CoUninitialize();
 						return false;
@@ -725,7 +745,7 @@ namespace MyApp {
 					//读取entity的SAFEARRAY
 					LPVOID eData = nullptr;
 					LONG eCount;
-					if (!ReadSafeArray(&entityVT, VT_DISPATCH, 1, &eData, &eCount)) {
+					if (!ReadSafeArray(&SFSEntityVT, VT_DISPATCH, 1, &eData, &eCount)) {
 						CoUninitialize();
 						return false;
 					}
@@ -737,11 +757,11 @@ namespace MyApp {
 							CoUninitialize();
 							return false;
 						}
-						swEntity = CComPtr<IEntity>(myEntityData);
+						SFSEntity = CComPtr<IEntity>(myEntityData);
 
 						//b.获取该表面粗糙度所属的面
 						CComBSTR entityName;
-						result = swEntity->get_ModelName(&entityName);
+						result = SFSEntity->get_ModelName(&entityName);
 						if (result != S_OK) {
 							CoUninitialize();
 							return false;
@@ -780,6 +800,7 @@ namespace MyApp {
 							SFSAnnotation.SFSType = (swSFSymType_e)SFSymbolType;
 							FaceMap[faceName].AnnotationArray.push_back(SFSAnnotation);
 							FaceMap[faceName].AnnotationCount++;
+							DimXpertAnnotationCount++;
 						}
 						
 						
@@ -866,12 +887,13 @@ namespace MyApp {
 		//}
 
 		
-
+		DimXpertFeatureCount = FaceMap.size();//获取DimXpert特征数量
 		
 		return true;
 	}
 
 	
+
 
 	std::string  MyApplication::GbkToUtf8(const char* src_str)
 	{

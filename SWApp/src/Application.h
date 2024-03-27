@@ -54,7 +54,6 @@ namespace MyApp {
 	private:
 		std::map<std::string, std::string> property;//记录自定义属性
 		std::map<std::string, std::string> summary;//记录摘要
-		bool hasProperty = false;//是否检测到属性
 
 		std::string MyStateMessage[3] = { "Unfinished","Succeed!","Failed!" };//提示文本		
 		std::map<SWState, MyState> SWStateMap = {
@@ -71,7 +70,6 @@ namespace MyApp {
 		long DimXpertFeatureCount = 0;//MBD特征数
 
 		std::unordered_map<std::string, MyFaceFeature> FaceMap;//记录MBD信息[面 : 特征(标注1，标注2...)]
-		bool hasMBD = false;//是否检测到MBD信息
 		
 		std::unordered_map<swDimXpertAnnotationType_e, int> GeoTolMap = {
 			 {swDimXpertGeoTol_Angularity              ,2}//倾斜度M
@@ -109,6 +107,13 @@ namespace MyApp {
 			,{swDimXpertDimTol_Radius				   ,1}//半径公差
 			,{swDimXpertDimTol_Width				   ,1}//宽度公差
 		};//MBD标注类型集合：尺寸公差
+
+		bool toSave = true;//读取MBD时是否要保存模型
+
+		char InputName[64] = "pipe";//用户输入名
+		std::string CADName = InputName;//默认CAD文件名
+		std::string CADType = ".SLDPRT";//默认CAD文件类型
+		std::string CADPath = "D:\\Projects\\SWApp\\SolidWorks Part\\";//默认CAD文件路径
 			
 		void EnableDocking();//开启Docking特性
 		void ShowMenuBar();//显示菜单栏
@@ -132,6 +137,9 @@ namespace MyApp {
 	
 	public:
 		void ShowMyApp();
+		inline std::unordered_map<std::string, MyFaceFeature>& GetFaceMap() { return FaceMap; };//获取面哈希表的引用
+		inline std::map<SWState, MyState>& GetSWStateMap() { return SWStateMap; };//获取SW交互状态的引用
+		inline std::string GetExportPath() { return CADPath + CADName + "\\"; };//获取保存模型时的路径
 
 	//极致简洁的单例模式，运用了static的性质
 	private:
