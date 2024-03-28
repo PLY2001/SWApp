@@ -38,8 +38,11 @@ namespace MyApp {
 	VARIANT SFSEntityVT;//获取实体的SAFEARRAY数组的载体
 	CComPtr<ISFSymbol> swSFSymbol;//表面粗糙度
 
+	VARIANT swBodyVT;//获取"零件实体"的SAFEARRAY数组的载体
+	CComPtr<IBody2> swBody;//零件实体
 
-	
+	CComPtr<IMassProperty2> swMassProperty;//质量属性
+	VARIANT massCenterVT;//获取质心的SAFEARRAY数组的载体
 
 	HRESULT result = NOERROR; //存储函数的输出结果
 	
@@ -70,7 +73,9 @@ namespace MyApp {
 		//打开文件按钮
 		if (ImGui::Button("打开文件")) {
 			SWStateMap[SWState::PropertyGot] = MyState::Nothing;
+			SWStateMap[SWState::MassPropertyGot] = MyState::Nothing;
 			SWStateMap[SWState::MBDGot] = MyState::Nothing;
+			SWStateMap[SWState::ModelLoaded] = MyState::Nothing;			
 			if (SWStateMap[SWState::Connected] == MyState::Succeed) {
 				CADName = InputName;
 				myState = OpenFile() ? MyState::Succeed : MyState::Failed;
@@ -86,8 +91,8 @@ namespace MyApp {
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::FileOpen]].c_str());
 
 		//读取属性按钮
-		if (ImGui::Button("读取属性")) {
-			if (SWStateMap[SWState::Connected] == MyState::Succeed && SWStateMap[SWState::FileOpen] == MyState::Succeed) {
+		if (ImGui::Button("读取文档属性")) {
+			if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] == 1) {
 				myState = ReadProperty() ? MyState::Succeed : MyState::Failed;
 				SWStateMap[SWState::PropertyGot] = myState;
 			}
@@ -101,9 +106,25 @@ namespace MyApp {
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::PropertyGot]].c_str());
 
+		//加载质量属性按钮
+		if (ImGui::Button("加载质量属性")) {
+			if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] == 1) {
+				myState = ReadMassProperty() ? MyState::Succeed : MyState::Failed;
+				SWStateMap[SWState::MassPropertyGot] = myState;
+			}
+			else
+			{
+				myState = MyState::Nothing;
+				SWStateMap[SWState::MassPropertyGot] = myState;
+			}
+			//ImGui::OpenPopup("提示");
+		}
+		ImGui::SameLine();
+		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::MassPropertyGot]].c_str());
+
 		//读取MBD特征及其标注按钮
 		if (ImGui::Button("读取MBD特征及其标注")) {
-			if (SWStateMap[SWState::Connected] == MyState::Succeed && SWStateMap[SWState::FileOpen] == MyState::Succeed) {
+			if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] == 1) {
 				myState = ReadMBD() ? MyState::Succeed : MyState::Failed;
 				SWStateMap[SWState::MBDGot] = myState;
 			}
@@ -115,17 +136,37 @@ namespace MyApp {
 			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
+		//选择是否在读取MBD时导出模型
+		ImGui::Checkbox("导出?", &toSave);
+		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::MBDGot]].c_str());
 
-		//选择是否在读取MBD时导出模型
-		ImGui::Checkbox("读取MBD时导出模型", &toSave);
+		
+
+		//加载模型按钮
+		if (ImGui::Button("加载模型并显示")) {
+			if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] * (int)SWStateMap[SWState::MassPropertyGot] * (int)SWStateMap[SWState::MBDGot] == 1) {
+				myState = LoadModel() ? MyState::Succeed : MyState::Failed;
+				SWStateMap[SWState::ModelLoaded] = myState;
+			}
+			else
+			{
+				myState = MyState::Nothing;
+				SWStateMap[SWState::ModelLoaded] = myState;
+			}
+			//ImGui::OpenPopup("提示");
+		}
+		ImGui::SameLine();
+		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::ModelLoaded]].c_str());
+
+		
 
 		//显示弹窗
 		//ShowMessage(MyStateMessage[(int)myState].c_str());
 		
-		//显示属性
+		//显示文档属性
 		if (SWStateMap[SWState::PropertyGot] == MyState::Succeed) {
-			if (ImGui::CollapsingHeader("属性")) {
+			if (ImGui::CollapsingHeader("文档属性")) {
 				if (ImGui::TreeNode("自定义属性")){
 					for (auto p : property) {
 						std::string m = p.first + ":";
@@ -145,6 +186,20 @@ namespace MyApp {
 				}
 			}
 		}
+		
+		//显示质量属性
+		if (SWStateMap[SWState::MassPropertyGot] == MyState::Succeed) {
+			if (ImGui::CollapsingHeader("质量属性")) {
+				if (ImGui::TreeNode("质心(毫米)")){
+					ImGui::Text("X = %f",MassCenter.x);
+					ImGui::Text("Y = %f",MassCenter.y);
+					ImGui::Text("Z = %f",MassCenter.z);
+					ImGui::TreePop();
+					ImGui::Separator();
+				}
+				
+			}
+		}
 
 		//显示MBD
 		if (SWStateMap[SWState::MBDGot] == MyState::Succeed) {
@@ -160,7 +215,7 @@ namespace MyApp {
 							if (annotation.Type != swDimXpertDatum) {
 								ImGui::BulletText("标注公差大小:%f", annotation.AccuracySize);
 								ImGui::BulletText("标注公差等级:%d", annotation.AccuracyLevel);
-								for (auto datum : annotation.DatumNames) {
+								for (auto datum : annotation.ToleranceDatumNames) {
 									ImGui::BulletText(("标注公差基准:" + datum).c_str());
 								}
 								if (annotation.MCMType != swDimXpertMaterialConditionModifier_unknown) {
@@ -360,12 +415,20 @@ namespace MyApp {
 		swDoc.Release();
 		result = swApp->OpenDoc6(fileName, (int)swDocumentTypes_e::swDocPART, (int)swOpenDocOptions_e::swOpenDocOptions_Silent, nullptr, &error, &warning, &swDoc);//error=2表示无法找到文件
 
-		if (result!=S_OK || error != NOERROR)
-		{
+		if (result!=S_OK || error != NOERROR) {
 			CoUninitialize();
 			return false;
 		}
 		swApp->put_Visible(VARIANT_TRUE);
+
+		//获取更高级的doc
+		swDocE.Release();
+		result = swDoc->get_Extension(&swDocE);
+		if (result != S_OK) {
+			CoUninitialize();
+			return false;
+		}
+
 		return true;
 	}
 
@@ -539,28 +602,37 @@ namespace MyApp {
 				//c.获取公差
 				double toleranceSize = 0;
 				int toleranceLevel = 0;
-				std::string myDatumName;
-				std::vector<std::string> datumNames;
+				std::string datumName;
+				std::vector<std::string> toleranceDatumNames;
 				swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;
-				ReadAnnotationData(dimXpertAnnotationType, &toleranceSize, &toleranceLevel, &myDatumName, datumNames,&MCMType);//可以返回公差等级（1.轴/孔 2.线性尺寸 3.形位公差 三者等级定义不同）
+				ReadAnnotationData(dimXpertAnnotationType, &toleranceSize, &toleranceLevel, &datumName, toleranceDatumNames,&MCMType);//可以返回公差等级（1.轴/孔 2.线性尺寸 3.形位公差 三者等级定义不同）
 
 				//存入特征面数组的标注数组
 				MyAnnotation myAnnotation;
 				myAnnotation.Name = dimXpertAnnotationNameStr;
 				myAnnotation.Type = dimXpertAnnotationType;	
-				myAnnotation.isTolerance = dimXpertAnnotationType != swDimXpertDatum ? 1 : 0;
+				myAnnotation.IsTolerance = dimXpertAnnotationType != swDimXpertDatum ? 1 : 0;
 				myAnnotation.AccuracySize = toleranceSize;
 				myAnnotation.AccuracyLevel = toleranceLevel;
-				myAnnotation.isDatum = dimXpertAnnotationType == swDimXpertDatum ? 1 : 0;
-				myAnnotation.MyDatumName = myDatumName;
-				myAnnotation.DatumNames = datumNames;
+				myAnnotation.IsDatum = dimXpertAnnotationType == swDimXpertDatum ? 1 : 0;
+				myAnnotation.DatumName = datumName;
+				myAnnotation.ToleranceDatumNames = toleranceDatumNames;
 				myAnnotation.hasMCM = MCMType != swDimXpertMaterialConditionModifier_unknown ? 1 : 0;
 				myAnnotation.MCMType = MCMType;
 				faceFeature.AnnotationArray.push_back(myAnnotation);
 
 			}
 			
-			//3.读取DimXpert特征所对应的面
+			//3.读取DimXpert特征所对应的面并保存为文件
+
+			//a.设定当前面的名称
+			CComBSTR faceName = "";
+			std::string fileIndex = std::to_string(feIndex);//int转string
+			result = faceName.Append(fileIndex.c_str());
+			result = faceName.Append("_");
+			result = faceName.Append(dimXpertFeatureName);
+
+			//b.读取DimXpert特征所对应的面
 			result = swDimXpertFeature->GetFaces(&faceVT);
 			//读取面的SAFEARRAY
 			LPVOID fData = nullptr;
@@ -576,11 +648,12 @@ namespace MyApp {
 				if (result != S_OK) {
 					CoUninitialize();
 					return false;
-				}
-
-				//a.使SW自动选择当前特征对应的面
+				}				
 				swFace = CComPtr<IFace2>(myFaceData);
 				swEntity = swFace;
+				swEntity->put_ModelName(faceName);//设置模型名
+
+				//b.使SW自动选择当前特征对应的面
 				VARIANT_BOOL isSelected;
 				if (fIndex > 0) {
 					swEntity->Select4(VARIANT_TRUE, nullptr, &isSelected);
@@ -589,6 +662,7 @@ namespace MyApp {
 					swEntity->Select4(VARIANT_FALSE, nullptr, &isSelected);
 				}
 
+				
 				
 				
 				
@@ -657,17 +731,14 @@ namespace MyApp {
 				
 			}
 
-			//b.给面命名，并以该命名将特征存入面哈希表				
-			CComBSTR faceName = "";
-			std::string fileIndex = std::to_string(feIndex);//int转string
-			result = faceName.Append(fileIndex.c_str());
-			result = faceName.Append("_");
-			result = faceName.Append(dimXpertFeatureName);
-			swEntity->put_ModelName(faceName);
+			//c.以面命名将特征存入面哈希表							
+			//VARIANT_BOOL isSetName = VARIANT_FALSE;
+			//swDoc->SelectedFaceProperties(0, 0, 0, 0, 0, 0, 0, VARIANT_TRUE, faceName,&isSetName);//设置面属性的名字（sw右键面属性可见）
 			std::string FaceName = GbkToUtf8(_com_util::ConvertBSTRToString(faceName));
 			FaceMap[FaceName] = faceFeature;
+			//FaceMap[FaceName].AppliedFaceNameBSTR = faceName.Copy();//给特征存储所属面的BSTR名(因为string转回BSTR有乱码)
 
-			//c.保存面为stl文件（当有选中的面时，直接保存时默认保存该面）
+			//d.保存面为stl文件（当有选中的面时，直接保存时默认保存该面）
 			if (toSave) {
 				long error = NOERROR;
 				long warning = NOERROR;
@@ -692,12 +763,6 @@ namespace MyApp {
 		}
 		
 		//4.获取表面粗糙度		
-		swDocE.Release();
-		result = swDoc->get_Extension(&swDocE);
-		if (result != S_OK) {
-			CoUninitialize();
-			return false;
-		}
 		result = swDocE->GetAnnotations(&swAnnotationVT);
 		if (result != S_OK) {
 			CoUninitialize();
@@ -793,7 +858,7 @@ namespace MyApp {
 						//d.添加至所属的面特征中
 						if (FaceMap.count(faceName) > 0) {
 							MyAnnotation SFSAnnotation;
-							SFSAnnotation.isSFSymbol = 1;
+							SFSAnnotation.IsSFSymbol = 1;
 							SFSAnnotation.Name = "粗糙度" + textstr;
 							SFSAnnotation.AccuracySize = SFSymbolSize;
 							SFSAnnotation.AccuracyLevel = 1;
@@ -813,8 +878,79 @@ namespace MyApp {
 		}
 
 		
+		//5.导出无MBD标注的面
+		bool hasNoMBDFace = false;//记录该类面是否存在
+
+		CComPtr<IPartDoc> swPartDoc;//获取零件
+		swPartDoc = swDoc;
+
+		swPartDoc->GetBodies2(swBodyType_e::swAllBodies, VARIANT_TRUE, &swBodyVT);//获取实体VT
+		LPVOID bData = nullptr;
+		LONG bCount;
+		if (!ReadSafeArray(&swBodyVT, VT_DISPATCH, 1, &bData, &bCount)) {
+			CoUninitialize();
+			return false;
+		}
+		IDispatch** mybData = (IDispatch**)bData;
+		IBody2* myBodyData;//用于获取IBody2*类型数据
+		for (int bIndex = 0; bIndex < bCount; bIndex++) {
+			result = mybData[bIndex]->QueryInterface(IID_IBody2, (void**)&myBodyData);
+			if (result != S_OK) {
+				CoUninitialize();
+				return false;
+			}
+			swBody = CComPtr<IBody2>(myBodyData);//得到实体
+
+			//a.循环全部面
+			CComPtr<IFace2> thisFace;//面
+			CComPtr<IFace2> nextFace;//面
+			swBody->IGetFirstFace(&thisFace);
+
+			while (thisFace)
+			{
+				//b.选择无标注的面
+				swEntity = thisFace;
+				CComBSTR faceName;
+				result = swEntity->get_ModelName(&faceName);//查看面的模型名称
+				if (faceName == "") { //名称为空说明该面没有读取过特征标注
+					VARIANT_BOOL isSelected;
+					result = swEntity->Select4(VARIANT_TRUE, nullptr, &isSelected);
+					hasNoMBDFace = true;
+				}
+				else {
+					VARIANT_BOOL isDeSelected;
+					result = swEntity->DeSelect(&isDeSelected);
+				}
+				nextFace.Release();
+				result = thisFace->IGetNextFace(&nextFace);
+				thisFace = nextFace;
+			}
 
 
+		}
+		//c.保存无MBD的面
+		if (hasNoMBDFace) {
+			CComBSTR noMBDFaceName = "0_NoMBDFace";
+			MyFaceFeature noMBDFace;
+			noMBDFace.AnnotationCount = 0;
+			noMBDFace.Name = "0_NoMBDFace";
+			//noMBDFace.AppliedFaceNameBSTR = noMBDFaceName;
+			MyAnnotation noMBDAnnotation;
+			noMBDAnnotation.Name = "NoMBD";
+			noMBDFace.AnnotationArray.push_back(noMBDAnnotation);
+			FaceMap["0_NoMBDFace"] = noMBDFace;
+
+			long error = NOERROR;
+			long warning = NOERROR;
+			VARIANT_BOOL isSaved;
+			CComBSTR savePath = (CADPath + CADName + "\\" + "0_NoMBDFace.STL").c_str();
+			result = swDoc->SaveAs4(savePath, swSaveAsCurrentVersion, swSaveAsOptions_Silent, &error, &warning, &isSaved);//保存文件
+			if (result != S_OK) {
+				CoUninitialize();
+				return false;
+			}
+		}
+		
 
 		//获取建模的特征（非DimXpert）
 		//result = swDoc->get_FeatureManager(&swFeatureManager);
@@ -895,6 +1031,30 @@ namespace MyApp {
 	
 
 
+	bool MyApplication::LoadModel()
+	{
+		return true;
+	}
+
+	bool MyApplication::ReadMassProperty()
+	{
+		swDispatch.Release();
+		result = swDocE->CreateMassProperty2(&swDispatch);
+		swMassProperty = swDispatch;
+		result = swMassProperty->get_CenterOfMass(&massCenterVT);
+
+		LPVOID mcData = nullptr;
+		LONG mcCount;
+		if (!ReadSafeArray(&massCenterVT, VT_R8, 1, &mcData, &mcCount)) {
+			CoUninitialize();
+			return false;
+		}
+		double* mymcData = (double*)mcData;
+		MassCenter = glm::vec3(mymcData[0], mymcData[1], mymcData[2]) * 1000.0f; //米->毫米
+
+		return true;
+	}
+
 	std::string  MyApplication::GbkToUtf8(const char* src_str)
 	{
 		int len = MultiByteToWideChar(CP_ACP, 0, src_str, -1, NULL, 0);
@@ -941,7 +1101,6 @@ namespace MyApp {
 							//LPVOID pData;
 							if (SUCCEEDED(SafeArrayAccessData(pSafeArray, &*pData)))//提取数组指针至pData
 							{
-								
 								// end accessing data
 								SafeArrayUnaccessData(pSafeArray);
 								return true;

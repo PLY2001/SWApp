@@ -61,6 +61,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     const char* glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_SAMPLES, 8);//设置MSAAx8
+    glEnable(GL_MULTISAMPLE);//开启MSAA
 
     //创建窗口上下文
     GLFWwindow* window = glfwCreateWindow(WinWidth, WinHeight, "Display", nullptr, nullptr);
@@ -99,17 +101,16 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-	//模型哈希表
+	//模型哈希表(毫米)
 	std::unordered_map<std::string, Model> modelMap;
 
     //实例哈希表
     std::unordered_map<std::string, InstanceBuffer> instanceMap;
 
 	//创建变换矩阵
-	std::vector<glm::mat4> ModelMatrices;//生成模型的model变换矩阵数组
-	ModelMatrices.push_back(ModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f)).Matrix);
-	glm::mat4 ViewMatrix;
-	glm::mat4 ProjectionMatrix;
+    glm::mat4 modelMatrix;
+	glm::mat4 viewMatrix;
+	glm::mat4 projectionMatrix;
 	
     //Shader
     Shader shader("res/shaders/Basic.shader");
@@ -133,23 +134,24 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         swStateMap = App.GetSWStateMap();
 
         //模型、实例预处理
-        if (swStateMap[MyApp::SWState::MBDGot] != MyApp::MyState::Succeed) {//重新读取文件时需要重新加载模型
+        if (swStateMap[MyApp::SWState::ModelLoaded] != MyApp::MyState::Succeed) {//重新读取文件时需要重新加载模型
             modelLoaded = false;
         }
-        if (swStateMap[MyApp::SWState::MBDGot] == MyApp::MyState::Succeed && modelLoaded == false) {			
+        if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed && modelLoaded == false) {
             //加载模型
             modelMap.clear();
 			for (auto face : faceMap) {
 				std::string fileName = face.first + ".STL";
                 std::string filePath = App.GetExportPath();
-				Model model((filePath + fileName), glm::vec3(0.0f, 0.0f, 0.0f));
-				modelMap[face.first] = model;
+                Model model((filePath + fileName));
+                model.SetModelMatrixPosition(-App.GetMassCenter()); //以质心置中
+				modelMap[face.first] = model;              
 			}
 
 			//创建实例
             instanceMap.clear();
 			for (auto model : modelMap) {
-				InstanceBuffer instance(sizeof(glm::mat4), &model.second.mModelMatrix);
+				InstanceBuffer instance(sizeof(glm::mat4), &model.second.GetModelMatrix());
 				instance.AddInstanceBuffermat4(model.second.meshes[0].vaID, 3);
 				instanceMap[model.first] = instance;
 			}
@@ -157,47 +159,55 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
                 
         }
 
-        //1.渲染模型
-        GLClearError();//清除错误信息
+        //1.渲染模型	
+		GLClearError();//清除错误信息
 
 		//记录每帧的时间
 		deltaTime = (float)glfwGetTime() - lastTime;
 		lastTime = (float)glfwGetTime();
 
-        //更新相机位置
-        cameraPos[0] = glm::vec3(0.0f, 0.0f, PictureSize + 1.0f);
-        cameraPos[1] = glm::vec3(-PictureSize - 1.0f, 0.0f, 0.0f);
-        cameraPos[2] = glm::vec3(0.0f, PictureSize + 1.0f, 0.0f);
-        
-		//设置变换矩阵
-		//for (glm::mat4& modelmatrix : ModelMatrices)
-		//{
-		//	modelmatrix = glm::rotate(modelmatrix, deltaTime * glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f));//旋转
-		//}      
-		ViewMatrix = glm::lookAt(cameraPos[(int)viewDirction], cameraPos[(int)viewDirction] + cameraFront[(int)viewDirction], cameraUp[(int)viewDirction]);
-		ProjectionMatrix = glm::ortho(-PictureSize, PictureSize, -PictureSize, PictureSize, 0.1f, PictureSize*2.0f);
+		//更新相机位置
+		cameraPos[0] = glm::vec3(0.0f, 0.0f, PictureSize + 1.0f);
+		cameraPos[1] = glm::vec3(-PictureSize - 1.0f, 0.0f, 0.0f);
+		cameraPos[2] = glm::vec3(0.0f, PictureSize + 1.0f, 0.0f);
+
+		//设置变换矩阵			
+		//modelMatrix = glm::rotate(modelMatrix, deltaTime * glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f));//旋转		
+		viewMatrix = glm::lookAt(cameraPos[(int)viewDirction], cameraPos[(int)viewDirction] + cameraFront[(int)viewDirction], cameraUp[(int)viewDirction]);
+		projectionMatrix = glm::ortho(-PictureSize, PictureSize, -PictureSize, PictureSize, 0.1f, PictureSize * 2.0f);
 
 		//将model矩阵数组填入实例哈希表
-        for (auto instance : instanceMap) {
-            instance.second.SetDatamat4(sizeof(glm::mat4), ModelMatrices.data());
-        }		
-		//向uniform缓冲对象填入view、projection矩阵数据
-		ubo.SetDatamat4(0, sizeof(glm::mat4), &ViewMatrix);
-		ubo.SetDatamat4(sizeof(glm::mat4), sizeof(glm::mat4), &ProjectionMatrix);
+        if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
+            for (auto instance : instanceMap) {
+                //旋转
+                //modelMap[instance.first].SetModelMatrixPosition(App.GetMassCenter());
+                //modelMap[instance.first].SetModelMatrixRotation(deltaTime* glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                //modelMap[instance.first].SetModelMatrixPosition(-App.GetMassCenter());
 
-        //pass
-        glEnable(GL_DEPTH_TEST);
+                modelMatrix = modelMap[instance.first].GetModelMatrix();
+                instance.second.SetDatamat4(sizeof(glm::mat4), &modelMatrix);
+            }
+        }
+		//向uniform缓冲对象填入view、projection矩阵数据
+		ubo.SetDatamat4(0, sizeof(glm::mat4), &viewMatrix);
+		ubo.SetDatamat4(sizeof(glm::mat4), sizeof(glm::mat4), &projectionMatrix);
+
+		//pass
+		glEnable(GL_DEPTH_TEST);
 		renderer.ClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		renderer.ClearDepth();
-        renderer.CullFace((int)cullMode);
+		renderer.CullFace((int)cullMode);
 
-        shader.Bind();
-        for (auto model : modelMap) {
-            shader.SetUniform1f("type", (float)faceMap[model.first].AnnotationArray[0].Type/255.0f);//获取面的MBD数据
-            shader.SetUniform1f("isDatum", (float)faceMap[model.first].AnnotationArray[0].isDatum);
-            model.second.DrawInstanced(shader, 1);
-        }      
-        shader.Unbind();
+		shader.Bind();
+		if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
+			for (auto model : modelMap) {
+				shader.SetUniform1f("type", (float)faceMap[model.first].AnnotationArray[0].Type / 255.0f);//获取面的MBD数据
+				shader.SetUniform1f("isDatum", (float)faceMap[model.first].AnnotationArray[0].IsDatum);
+				model.second.DrawInstanced(shader, 1);
+			}
+		}
+		shader.Unbind();
+		
 
         //2.渲染ImGui界面
         ImGui_ImplOpenGL3_NewFrame();

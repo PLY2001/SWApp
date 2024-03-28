@@ -1,7 +1,7 @@
 #include "Model.h"
 
 
-Model::Model(std::string path, glm::vec3 Pos):Pos(Pos)
+Model::Model(std::string path)
 {
 	Assimp::Importer import;
 	const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);// | aiProcess_CalcTangentSpace);
@@ -14,7 +14,7 @@ Model::Model(std::string path, glm::vec3 Pos):Pos(Pos)
 	directory = path.substr(0, path.find_last_of('/'));
 	processNode(scene->mRootNode, scene);
 
-	SetPosition();
+	//SetPosition();
 }
 
 
@@ -184,12 +184,17 @@ void Model::DrawInstanced(Shader& shader,int amount)
 		meshes[i].DrawInstanced(shader,amount);
 }
 
-void Model::SetMatrix(float deltaTime)
-{
-	mModelMatrix = glm::rotate(mModelMatrix, deltaTime * glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-}
-
-void Model::SetPosition()
+void Model::SetModelMatrixPosition(glm::vec3 Pos)
 {
 	mModelMatrix = glm::translate(mModelMatrix, Pos);
+}
+
+void Model::SetModelMatrixRotation(float Radians, glm::vec3 Axis)
+{
+	mModelMatrix = glm::rotate(mModelMatrix, Radians, Axis);
+}
+
+void Model::SetModelMatrixScale(glm::vec3 Scale)
+{
+	mModelMatrix = glm::scale(mModelMatrix, Scale);
 }

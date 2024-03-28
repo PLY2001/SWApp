@@ -6,6 +6,9 @@
 //#include <memory>
 //#include <mutex>
 #include <regex>//正则表达式
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 //SolidWorks
 #include <atlbase.h> //com
@@ -16,38 +19,39 @@
 namespace MyApp {
 
 	struct MyAnnotation { //若有俩面之间的尺寸公差标注，那么这俩面都具有一样的MyAnnotation，但是定义在不同的MyFaceFeature中
-		std::string Name;
-		swDimXpertAnnotationType_e Type = swDimXpertAnnotationType_unknown;//@
+		std::string Name;//标注名称
+		swDimXpertAnnotationType_e Type = swDimXpertAnnotationType_unknown;//标注类型
+		double AccuracySize = 0;//公差或粗糙度精度(毫米)
+		int AccuracyLevel = 0;//公差或粗糙度等级
 		
 		//标注基准
-		int isDatum = 0;//@
-		std::string MyDatumName;
+		int IsDatum = 0;//是否是标注基准
+		std::string DatumName;//基准名称
 
 		//表面粗糙度
-		int isSFSymbol = 0;//@
-		swSFSymType_e SFSType = swSFBasic;//@
+		int IsSFSymbol = 0;//是否是表面粗糙度
+		swSFSymType_e SFSType = swSFBasic;//表面粗糙度类型
 
 		//公差
-		int isTolerance = 0;//@
-		double AccuracySize = 0;//@
-		int AccuracyLevel = 0;
-		std::vector<std::string> DatumNames;//@size
-		int hasMCM = 0;//@
-		swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;//实体状态，即形位公差标注中的M和L//@
+		int IsTolerance = 0;//是否是尺寸/形位公差
+		std::vector<std::string> ToleranceDatumNames;//公差基准
+		int hasMCM = 0;//形位公差是否有实体状态
+		swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;//实体状态类型，即形位公差标注中的M和L
 
 	};//标注 
 
 	struct MyFaceFeature {
-		std::string Name;
-		int AnnotationCount = 0;
-		std::vector<MyAnnotation> AnnotationArray;
+		std::string Name;//特征名称
+		//CComBSTR AppliedFaceNameBSTR;//所属面名称
+		int AnnotationCount = 0;//标注数量
+		std::vector<MyAnnotation> AnnotationArray;//标注数组
 	};//特征面
 
 	enum class MyState {
 		Nothing, Succeed, Failed
 	};//程序当前操作状态
 	enum class SWState {
-		Connected, FileOpen, PropertyGot, MBDGot
+		Connected, FileOpen, PropertyGot, MBDGot, ModelLoaded, MassPropertyGot
 	};//SW交互状态
 
 	class MyApplication {
@@ -61,6 +65,8 @@ namespace MyApp {
 			,{SWState::FileOpen,    MyState::Nothing}
 			,{SWState::PropertyGot, MyState::Nothing}
 			,{SWState::MBDGot,      MyState::Nothing}
+			,{SWState::ModelLoaded, MyState::Nothing}
+			,{SWState::MassPropertyGot, MyState::Nothing}
 		};//记录SW交互状态
 		MyState myState = MyState::Nothing;//记录程序当前操作状态
 
@@ -114,6 +120,8 @@ namespace MyApp {
 		std::string CADName = InputName;//默认CAD文件名
 		std::string CADType = ".SLDPRT";//默认CAD文件类型
 		std::string CADPath = "D:\\Projects\\SWApp\\SolidWorks Part\\";//默认CAD文件路径
+
+		glm::vec3 MassCenter = glm::vec3(0);
 			
 		void EnableDocking();//开启Docking特性
 		void ShowMenuBar();//显示菜单栏
@@ -121,8 +129,10 @@ namespace MyApp {
 		bool ShowMessage(const char* message);//显示ImGui弹窗，而ImGui::OpenPopup("提示")用于弹出弹窗
 		bool ConnectSW();//连接SW
 		bool OpenFile();//打开文件
-		bool ReadProperty();//读取属性
+		bool ReadProperty();//读取文件属性
 		bool ReadMBD();//读取MBD特征及其标注
+		bool LoadModel();//加载模型
+		bool ReadMassProperty();//获取质量属性
 
 		std::string GbkToUtf8(const char* src_str);//将SW默认文本的GBK编码转为ImGui显示文本用的Utf8编码
 		bool ReadSafeArray(VARIANT* vt, VARENUM vtType, int dimensional, LPVOID* pData, LONG* itemCount);//读取SAFEARRAY数组(输入VARIANT变量，数组元素类型，数组维度，输出数组，输出数组大小)
@@ -140,6 +150,7 @@ namespace MyApp {
 		inline std::unordered_map<std::string, MyFaceFeature>& GetFaceMap() { return FaceMap; };//获取面哈希表的引用
 		inline std::map<SWState, MyState>& GetSWStateMap() { return SWStateMap; };//获取SW交互状态的引用
 		inline std::string GetExportPath() { return CADPath + CADName + "\\"; };//获取保存模型时的路径
+		inline glm::vec3 GetMassCenter() { return MassCenter; };//获取质心(毫米)
 
 	//极致简洁的单例模式，运用了static的性质
 	private:

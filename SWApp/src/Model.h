@@ -16,27 +16,17 @@ private:
 	std::vector<myTexture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName);
 	unsigned int TextureFromFile(const char* path, const std::string& directory);
 	std::vector<myTexture> textures_loaded;
-	
+	glm::mat4 mModelMatrix;
 	
 
 public:
-	Model(std::string path,glm::vec3 Pos);
+	Model(std::string path);
 	Model() = default;
 	void Draw(Shader& shader);
 	void DrawInstanced(Shader& shader, int amount);
-	glm::mat4 mModelMatrix;
-	void SetPosition();
-	void SetMatrix(float deltaTime);
 	std::vector<Mesh> meshes;
-};
-
-class ModelMatrix
-{
-public:
-	glm::mat4 Matrix = glm::mat4(1.0f);
-	ModelMatrix(glm::vec3 Pos)
-	{
-		Matrix = glm::translate(Matrix, Pos);
-	}
-	
+	inline glm::mat4& GetModelMatrix() { return mModelMatrix; };
+	void SetModelMatrixPosition(glm::vec3 Pos);
+	void SetModelMatrixRotation(float Radians, glm::vec3 Axis);
+	void SetModelMatrixScale(glm::vec3 Scale);
 };
