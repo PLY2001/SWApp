@@ -9,6 +9,9 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include <thread>
+#include <mutex>
+#include <atomic>
 
 //SolidWorks
 #include <atlbase.h> //com
@@ -144,6 +147,8 @@ namespace MyApp {
 		void DatumData(std::string* myDatumName);//读取基准信息
 		void GeoTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, std::vector<std::string>& datumNames, swDimXpertMaterialConditionModifier_e* MCMType);//读取形位公差数据
 		void DimTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel);//读取尺寸公差数据
+
+		
 	
 	public:
 		void ShowMyApp();
@@ -151,6 +156,17 @@ namespace MyApp {
 		inline std::map<SWState, MyState>& GetSWStateMap() { return SWStateMap; };//获取SW交互状态的引用
 		inline std::string GetExportPath() { return CADPath + CADName + "\\"; };//获取保存模型时的路径
 		inline glm::vec3 GetMassCenter() { return MassCenter; };//获取质心(毫米)
+
+		long allTime = 0;//MBD读取总耗时
+		long feTime = 0;//特征读取循环耗时（包含标注、面耗时）
+		long aTime = 0;//标注读取循环耗时
+		long fTime = 0;//面读取循环耗时
+		long swaTime = 0;//表面粗糙度读取循环耗时
+		long bTime = 0;//非MBD面读取循环耗时
+
+		//std::mutex mtx;
+		//void FeatureLoop(int feIndex, IDispatch** & myfeData);
+		//void AnnotationLoop(int aIndex, IDispatch**& myaData, MyFaceFeature &faceFeature);
 
 	//极致简洁的单例模式，运用了static的性质
 	private:
@@ -167,7 +183,14 @@ namespace MyApp {
 
 	};
 
-	
+	//class MyApplicationAdapter
+	//{
+	//private:
+	//	MyApplication* t;
+	//public:
+	//	MyApplicationAdapter(MyApplication* t_) :t(t_) {}
+	//	void operator()(int feIndex, IDispatch**& myfeData, MyFaceFeature& faceFeature) { t->AnnotationLoop(feIndex, myfeData, faceFeature); };
+	//};
 
 
     

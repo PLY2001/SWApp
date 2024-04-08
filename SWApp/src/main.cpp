@@ -139,18 +139,24 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         }
         if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed && modelLoaded == false) {
             //加载模型
+            float minScale = 1e10;
+            float thisScale = 1e10;
             modelMap.clear();
 			for (auto face : faceMap) {
 				std::string fileName = face.first + ".STL";
                 std::string filePath = App.GetExportPath();
-                Model model((filePath + fileName));
-                model.SetModelMatrixPosition(-App.GetMassCenter()); //以质心置中
+                Model model((filePath + fileName));//读取文件
+                thisScale = model.GetNormalizeScale(App.GetMassCenter());//求出每个面模型的缩放尺寸
+                minScale = thisScale < minScale ? thisScale : minScale;//选择最小的缩放尺寸                               
 				modelMap[face.first] = model;              
 			}
 
 			//创建实例
             instanceMap.clear();
 			for (auto model : modelMap) {
+                modelMap[model.first].SetModelMatrixScale(glm::vec3(minScale)); //缩放
+                modelMap[model.first].SetModelMatrixPosition(-App.GetMassCenter()); //以质心置中 
+
 				InstanceBuffer instance(sizeof(glm::mat4), &model.second.GetModelMatrix());
 				instance.AddInstanceBuffermat4(model.second.meshes[0].vaID, 3);
 				instanceMap[model.first] = instance;
@@ -232,7 +238,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         ImGui::RadioButton("面正向剔除", (int*)&cullMode, (int)CullMode::CullFront);
 		ImGui::SameLine();
         ImGui::RadioButton("面反向剔除", (int*)&cullMode, (int)CullMode::CullBack);
+        ImGui::Text("allTime=%f", (float)App.allTime);
+        ImGui::Text("feTime=%f", (float)App.feTime);
+        ImGui::Text("aTime=%f", (float)App.aTime);
+        ImGui::Text("fTime=%f", (float)App.fTime);
+        ImGui::Text("swaTime=%f", (float)App.swaTime);
+        ImGui::Text("bTime=%f", (float)App.bTime);
         ImGui::End();
+
 		
         //Rendering       
         ImGuiIO& io = ImGui::GetIO();

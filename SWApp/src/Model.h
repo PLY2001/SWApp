@@ -29,4 +29,5 @@ public:
 	void SetModelMatrixPosition(glm::vec3 Pos);
 	void SetModelMatrixRotation(float Radians, glm::vec3 Axis);
 	void SetModelMatrixScale(glm::vec3 Scale);
+	float GetNormalizeScale(glm::vec3 MassCenter);
 };

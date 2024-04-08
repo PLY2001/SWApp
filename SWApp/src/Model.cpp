@@ -198,3 +198,16 @@ void Model::SetModelMatrixScale(glm::vec3 Scale)
 {
 	mModelMatrix = glm::scale(mModelMatrix, Scale);
 }
+
+float Model::GetNormalizeScale(glm::vec3 MassCenter)
+{
+	float maxDis = 0;
+	for (auto mesh : meshes) {
+		for (auto vertex : mesh.vertices) {
+			float dis = glm::distance(vertex.Position, MassCenter);
+			maxDis = dis > maxDis ? dis : maxDis;
+		}		
+	}
+	
+	return 50.0f / maxDis;
+}

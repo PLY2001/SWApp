@@ -388,6 +388,7 @@ namespace MyApp {
 	bool MyApplication::ConnectSW()
 	{
 		CoInitialize(NULL); //初始化COM库（让Windows加载DLLs）
+		//CoInitializeEx(0, COINIT_MULTITHREADED); //初始化COM库（让Windows加载DLLs）（多线程版）
 		swApp.Release();//Realease的作用是避免重复初始化swApp，导致出错
 		if (swApp.CoCreateInstance(__uuidof(SldWorks), NULL, CLSCTX_LOCAL_SERVER) != S_OK)//创建swApp指针的对象实例
 		{
@@ -479,6 +480,7 @@ namespace MyApp {
 
 	bool MyApplication::ReadMBD()
 	{
+		long allStartTime = GetTickCount();
 		//首先新建以该CAD文件命名的文件夹，供后续保存模型用
 		if (toSave) {
 			bool flag = CreateDirectory((CADPath + CADName).c_str(), NULL);
@@ -535,7 +537,22 @@ namespace MyApp {
 		CComBSTR dimXpertAnnotationName;
 		std::string dimXpertFeatureNameStr;
 		std::string dimXpertAnnotationNameStr;
-		for (int feIndex = 0; feIndex < featureCount; feIndex++) {
+
+		long feStartTime = GetTickCount();
+		aTime = 0;
+		fTime = 0;
+
+		
+		//std::thread th[50];
+		//MyApplicationAdapter maa(this);
+		//for (int i = 0; i < featureCount; i++) {
+		//	
+		//	th[i] = std::thread(maa, i, std::ref(myfeData));
+		//}
+		//for (int i = 0; i < featureCount; i++)
+		//	th[i].join();
+		
+		for (int feIndex = 0; feIndex < featureCount; feIndex++) { //9991ms
 			result = myfeData[feIndex]->QueryInterface(IID_IDimXpertFeature, (void**)&myFeatureData);//为了将IDispatch*类型转为IDimXpertFeature*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertFeature是要查询的接口类型
 			if (result != S_OK) {
 				CoUninitialize();										
@@ -574,8 +591,20 @@ namespace MyApp {
 			}
 			faceFeature.AnnotationCount = annotationCount;
 			IDispatch** myaData = (IDispatch**)aData;//将数组指针赋与IDispatch**类型的指针数组的指针，与ReadSafeArray类型一致
+			
+			long aStartTime = GetTickCount();
+			//std::thread th[50];
+			//MyApplicationAdapter maa(this);
+			//for (int i = 0; i < annotationCount; i++) {
+			//
+			//	th[i] = std::thread(maa, i, std::ref(myaData), std::ref(faceFeature));
+			//}
+			//for (int i = 0; i < annotationCount; i++)
+			//	th[i].join();
+
 			IDimXpertAnnotation* myAnnotationData;//用于获取IDimXpertAnnotation*类型数据
-			for (int aIndex = 0; aIndex < annotationCount; aIndex++) {
+			
+			for (int aIndex = 0; aIndex < annotationCount; aIndex++) { //243ms
 				result = myaData[aIndex]->QueryInterface(IID_IDimXpertAnnotation, (void**)&myAnnotationData);//为了将IDispatch*类型转为IDimXpertAnnotation*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertAnnotation是要查询的接口类型
 				if (result != S_OK) {
 					CoUninitialize();
@@ -606,7 +635,7 @@ namespace MyApp {
 				std::vector<std::string> toleranceDatumNames;
 				swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;
 				ReadAnnotationData(dimXpertAnnotationType, &toleranceSize, &toleranceLevel, &datumName, toleranceDatumNames,&MCMType);//可以返回公差等级（1.轴/孔 2.线性尺寸 3.形位公差 三者等级定义不同）
-
+			
 				//存入特征面数组的标注数组
 				MyAnnotation myAnnotation;
 				myAnnotation.Name = dimXpertAnnotationNameStr;
@@ -620,9 +649,10 @@ namespace MyApp {
 				myAnnotation.hasMCM = MCMType != swDimXpertMaterialConditionModifier_unknown ? 1 : 0;
 				myAnnotation.MCMType = MCMType;
 				faceFeature.AnnotationArray.push_back(myAnnotation);
-
-			}
 			
+			}
+			long aEndTime = GetTickCount();
+			aTime += ((aEndTime - aStartTime));
 			//3.读取DimXpert特征所对应的面并保存为文件
 
 			//a.设定当前面的名称
@@ -642,8 +672,9 @@ namespace MyApp {
 				return false;
 			}
 			IDispatch** myfData = (IDispatch**)fData;
-			IFace2* myFaceData;//用于获取IFace2*类型数据						
-			for (int fIndex = 0; fIndex < faceCount; fIndex++) {
+			IFace2* myFaceData;//用于获取IFace2*类型数据			
+			long fStartTime = GetTickCount();
+			for (int fIndex = 0; fIndex < faceCount; fIndex++) { //15ms
 				result = myfData[fIndex]->QueryInterface(IID_IFace2, (void**)&myFaceData);
 				if (result != S_OK) {
 					CoUninitialize();
@@ -661,11 +692,6 @@ namespace MyApp {
 				else {
 					swEntity->Select4(VARIANT_FALSE, nullptr, &isSelected);
 				}
-
-				
-				
-				
-				
 
 
 				//在包围盒范围内向面投影光线 求交点，100个点需要20多秒，太慢了
@@ -724,12 +750,10 @@ namespace MyApp {
 				//
 				//}
 
-
-				
-				
-				
-				
+			
 			}
+			long fEndTime = GetTickCount();
+			fTime += ((fEndTime - fStartTime));
 
 			//c.以面命名将特征存入面哈希表							
 			//VARIANT_BOOL isSetName = VARIANT_FALSE;
@@ -762,6 +786,10 @@ namespace MyApp {
 			
 		}
 		
+		long feEndTime = GetTickCount();
+		feTime = feEndTime - feStartTime;
+		
+
 		//4.获取表面粗糙度		
 		result = swDocE->GetAnnotations(&swAnnotationVT);
 		if (result != S_OK) {
@@ -778,7 +806,8 @@ namespace MyApp {
 		}
 		IDispatch** myswaData = (IDispatch**)swaData;
 		IAnnotation* myswAnnotationsData;//用于获取IAnnotation*类型数据
-		for (int swaIndex = 0; swaIndex < swaCount; swaIndex++) {
+		long swaStartTime = GetTickCount();
+		for (int swaIndex = 0; swaIndex < swaCount; swaIndex++) { //188ms
 			result = myswaData[swaIndex]->QueryInterface(IID_IAnnotation, (void**)&myswAnnotationsData);
 			if (result != S_OK) {
 				CoUninitialize();
@@ -876,7 +905,8 @@ namespace MyApp {
 			}
 			
 		}
-
+		long swaEndTime = GetTickCount();
+		swaTime = swaEndTime - swaStartTime;
 		
 		//5.导出无MBD标注的面
 		bool hasNoMBDFace = false;//记录该类面是否存在
@@ -893,7 +923,8 @@ namespace MyApp {
 		}
 		IDispatch** mybData = (IDispatch**)bData;
 		IBody2* myBodyData;//用于获取IBody2*类型数据
-		for (int bIndex = 0; bIndex < bCount; bIndex++) {
+		long bStartTime = GetTickCount();
+		for (int bIndex = 0; bIndex < bCount; bIndex++) { //1294ms
 			result = mybData[bIndex]->QueryInterface(IID_IBody2, (void**)&myBodyData);
 			if (result != S_OK) {
 				CoUninitialize();
@@ -928,6 +959,8 @@ namespace MyApp {
 
 
 		}
+		long bEndTime = GetTickCount();
+		bTime = bEndTime - bStartTime;
 		//c.保存无MBD的面
 		if (hasNoMBDFace) {
 			CComBSTR noMBDFaceName = "0_NoMBDFace";
@@ -1024,7 +1057,10 @@ namespace MyApp {
 
 		
 		DimXpertFeatureCount = FaceMap.size();//获取DimXpert特征数量
-		
+
+		long allEndTime = GetTickCount();
+		allTime = allEndTime - allStartTime;
+
 		return true;
 	}
 
@@ -1292,6 +1328,268 @@ namespace MyApp {
 	
 		
 	
+	/*
+	void MyApplication::FeatureLoop(int feIndex, IDispatch**& myfeData)
+	{		
+		//mtx.lock();
+		IDimXpertFeature* myFeatureData;//用于最终获取IDimXpertFeature*类型数据		
+		CComBSTR dimXpertFeatureName;
+		CComBSTR dimXpertAnnotationName;
+		std::string dimXpertFeatureNameStr;
+		std::string dimXpertAnnotationNameStr;
+		CComPtr<IDimXpertFeature> swDimXpertFeature;//DimXpert特征
 
+		result = myfeData[feIndex]->QueryInterface(IID_IDimXpertFeature, (void**)&myFeatureData);
+		swDimXpertFeature = CComPtr<IDimXpertFeature>(myFeatureData);//用构造函数将IDimXpertFeature*普通指针转为CComPtr智能指针					
+		//a.获取特征名称
+		result = swDimXpertFeature->get_Name(&dimXpertFeatureName);//result为false？不知为何，但是能读取
+		//if (result != S_OK) {
+		//	CoUninitialize();										
+		//	return false;
+		//}
+		dimXpertFeatureNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertFeatureName));//BSTR转String(Gbk)(Imgui会乱码)，再转String(Utf8)			
+
+		//存入特征面数组
+		MyFaceFeature faceFeature;
+		faceFeature.Name = dimXpertFeatureNameStr;
+
+		//2.获取标注SAFEARRAY数组的承载体
+		result = swDimXpertFeature->GetAppliedAnnotations(&dimXpertAnnotationVT);
+		//读取DimXpert标注的SAFEARRAY
+		LPVOID aData = nullptr;//接收读取后的数组
+		LONG annotationCount;//接收读取后的数组大小
+		bool ToContinue = false;
+		if (!ReadSafeArray(&dimXpertAnnotationVT, VT_DISPATCH, 1, &aData, &annotationCount)) {
+			ToContinue = true;
+		}
+		if (aData == nullptr) {
+			ToContinue = true;//Realease模式下ReadSafeArray判断一直失误，不明原因
+		}
+		if(!ToContinue)
+		{
+			faceFeature.AnnotationCount = annotationCount;
+			IDispatch** myaData = (IDispatch**)aData;//将数组指针赋与IDispatch**类型的指针数组的指针，与ReadSafeArray类型一致
+			IDimXpertAnnotation* myAnnotationData;//用于获取IDimXpertAnnotation*类型数据
+			long aStartTime = GetTickCount();
+			for (int aIndex = 0; aIndex < annotationCount; aIndex++) { //243ms
+				result = myaData[aIndex]->QueryInterface(IID_IDimXpertAnnotation, (void**)&myAnnotationData);//为了将IDispatch*类型转为IDimXpertAnnotation*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertAnnotation是要查询的接口类型
+				swDimXpertAnnotation = CComPtr<IDimXpertAnnotation>(myAnnotationData);//用构造函数将IDimXpertAnnotation*普通指针转为CComPtr智能指针
+
+				//a.获取标注名称
+				result = swDimXpertAnnotation->get_Name(&dimXpertAnnotationName);
+				//if (result != S_OK) {
+				//	CoUninitialize();										
+				//	return false;
+				//}
+				dimXpertAnnotationNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertAnnotationName));
+
+				//b.获取标注类型
+				swDimXpertAnnotationType_e dimXpertAnnotationType;
+				result = swDimXpertAnnotation->get_Type(&dimXpertAnnotationType);
+
+				//c.获取公差
+				double toleranceSize = 0;
+				int toleranceLevel = 0;
+				std::string datumName;
+				std::vector<std::string> toleranceDatumNames;
+				swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;
+				ReadAnnotationData(dimXpertAnnotationType, &toleranceSize, &toleranceLevel, &datumName, toleranceDatumNames, &MCMType);//可以返回公差等级（1.轴/孔 2.线性尺寸 3.形位公差 三者等级定义不同）
+
+				//存入特征面数组的标注数组
+				MyAnnotation myAnnotation;
+				myAnnotation.Name = dimXpertAnnotationNameStr;
+				myAnnotation.Type = dimXpertAnnotationType;
+				myAnnotation.IsTolerance = dimXpertAnnotationType != swDimXpertDatum ? 1 : 0;
+				myAnnotation.AccuracySize = toleranceSize;
+				myAnnotation.AccuracyLevel = toleranceLevel;
+				myAnnotation.IsDatum = dimXpertAnnotationType == swDimXpertDatum ? 1 : 0;
+				myAnnotation.DatumName = datumName;
+				myAnnotation.ToleranceDatumNames = toleranceDatumNames;
+				myAnnotation.hasMCM = MCMType != swDimXpertMaterialConditionModifier_unknown ? 1 : 0;
+				myAnnotation.MCMType = MCMType;
+				faceFeature.AnnotationArray.push_back(myAnnotation);
+
+			}
+			long aEndTime = GetTickCount();
+			//aTime += ((aEndTime - aStartTime) / annotationCount);
+
+			
+			//3.读取DimXpert特征所对应的面并保存为文件
+
+			//a.设定当前面的名称
+			CComBSTR faceName = "";
+			std::string fileIndex = std::to_string(feIndex);//int转string
+			result = faceName.Append(fileIndex.c_str());
+			result = faceName.Append("_");
+			result = faceName.Append(dimXpertFeatureName);
+
+			//b.读取DimXpert特征所对应的面
+			result = swDimXpertFeature->GetFaces(&faceVT);
+			//读取面的SAFEARRAY
+			LPVOID fData = nullptr;
+			LONG faceCount;
+			if (!ReadSafeArray(&faceVT, VT_DISPATCH, 1, &fData, &faceCount)) {
+				
+			}
+			IDispatch** myfData = (IDispatch**)fData;
+			IFace2* myFaceData;//用于获取IFace2*类型数据			
+			long fStartTime = GetTickCount();
+			for (int fIndex = 0; fIndex < faceCount; fIndex++) { //15ms
+				result = myfData[fIndex]->QueryInterface(IID_IFace2, (void**)&myFaceData);
+				swFace = CComPtr<IFace2>(myFaceData);
+				swEntity = swFace;
+				swEntity->put_ModelName(faceName);//设置模型名
+
+				//b.使SW自动选择当前特征对应的面
+				VARIANT_BOOL isSelected;
+				if (fIndex > 0) {
+					swEntity->Select4(VARIANT_TRUE, nullptr, &isSelected);
+				}
+				else {
+					swEntity->Select4(VARIANT_FALSE, nullptr, &isSelected);
+				}
+
+
+
+
+
+
+
+				//在包围盒范围内向面投影光线 求交点，100个点需要20多秒，太慢了
+				//myFaceData->GetBox(&boxVT);//获取包围盒坐标。一共6个值：第一个点的xyz，第二个点的xyz，单位m
+				////读取包围盒的SAFEARRAY
+				//LPVOID bData = nullptr;
+				//LONG boxCount;
+				//if (!ReadSafeArray(&boxVT, VT_R8, 1, &bData, &boxCount)) {
+				//	CoUninitialize();
+				//	return false;
+				//}
+				//// here you can cast pData to an array (pointer) of the type you expect
+				//double* mybData = (double*)bData;
+				//// use the data here.
+				//double myBoxPos1[3] = { 0,0,0 };//用于获取double类型数据	
+				//double myBoxPos2[3] = { 0,0,0 };//用于获取double类型数据	
+				//for (int i = 0; i < boxCount; i++) {
+				//	if (i < 3)
+				//		myBoxPos1[i] = mybData[i];//包围盒点1
+				//	else
+				//		myBoxPos2[i - 3] = mybData[i];//包围盒点2
+				//}
+				//
+				//double thisPos[3];//目前的投影光线起点
+				//double dir[3] = { 1,0,0 };//目前的投影光线方向
+				//int sampleCount = 10;//投影采样次数
+				//for (int i = 0; i < sampleCount; i++) {
+				//	thisPos[0] = myBoxPos1[0] + i * (myBoxPos2[0] - myBoxPos1[0]) / sampleCount;
+				//	thisPos[1] = myBoxPos1[1] + i * (myBoxPos2[1] - myBoxPos1[1]) / sampleCount;
+				//	thisPos[2] = myBoxPos1[2] + i * (myBoxPos2[2] - myBoxPos1[2]) / sampleCount;
+				//
+				//	startPoint.Release();
+				//	projectDir.Release();
+				//	interactPoint.Release();
+				//
+				//	CreatVARIANTArray(3, VT_R8, thisPos, &startPointVT);//生成VARIANT数组
+				//	swDispatch.Release();
+				//	result = swMathUtility->CreatePoint(startPointVT, &swDispatch);//生成点
+				//	startPoint = swDispatch;
+				//
+				//	CreatVARIANTArray(3, VT_R8, dir, &projectDirVT);//生成VARIANT数组
+				//	swDispatch.Release();
+				//	result = swMathUtility->CreateVector(projectDirVT, &swDispatch);//生成向量
+				//	projectDir = swDispatch;
+				//
+				//	result = swFace->GetProjectedPointOn(startPoint, projectDir, &interactPoint);//投影，求得的交点单位是m，若未相交为NULL
+				//	if (interactPoint != NULL) {
+				//		result = interactPoint->get_ArrayData(&interactPointVT);
+				//		LPVOID iData = nullptr;
+				//		LONG iCount;
+				//		if (ReadSafeArray(&interactPointVT, VT_R8, 1, &iData, &iCount)) {
+				//			//存数据
+				//		}
+				//
+				//	}
+				//
+				//}
+
+
+
+
+
+
+			}
+			long fEndTime = GetTickCount();
+			//fTime += ((fEndTime - fStartTime) / faceCount);
+
+			//c.以面命名将特征存入面哈希表							
+			//VARIANT_BOOL isSetName = VARIANT_FALSE;
+			//swDoc->SelectedFaceProperties(0, 0, 0, 0, 0, 0, 0, VARIANT_TRUE, faceName,&isSetName);//设置面属性的名字（sw右键面属性可见）
+			std::string FaceName = GbkToUtf8(_com_util::ConvertBSTRToString(faceName));
+			FaceMap[FaceName] = faceFeature;
+			//FaceMap[FaceName].AppliedFaceNameBSTR = faceName.Copy();//给特征存储所属面的BSTR名(因为string转回BSTR有乱码)
+
+			//d.保存面为stl文件（当有选中的面时，直接保存时默认保存该面）
+			if (toSave) {
+				long error = NOERROR;
+				long warning = NOERROR;
+				VARIANT_BOOL isSaved;
+				result = faceName.Append(".STL");
+				CComBSTR savePath = (CADPath + CADName + "\\").c_str();
+				result = savePath.Append(faceName);
+				result = swApp->SetUserPreferenceToggle(swUserPreferenceToggle_e::swSTLDontTranslateToPositive, VARIANT_TRUE);//设置sw导出stl时不正向化坐标系（保留建模的坐标系）
+				result = swDoc->SaveAs4(savePath, swSaveAsCurrentVersion, swSaveAsOptions_Silent, &error, &warning, &isSaved);//保存文件
+			}
+		}
+
+
+		//mtx.unlock();
+		
+	}
+
+	void MyApplication::AnnotationLoop(int aIndex, IDispatch**& myaData, MyFaceFeature& faceFeature)
+	{
+		CComBSTR dimXpertAnnotationName;
+		std::string dimXpertAnnotationNameStr;
+		IDimXpertAnnotation* myAnnotationData;//用于获取IDimXpertAnnotation*类型数据
+		result = myaData[aIndex]->QueryInterface(IID_IDimXpertAnnotation, (void**)&myAnnotationData);//为了将IDispatch*类型转为IDimXpertAnnotation*，需要用QueryInterface查询是否可转换(CComPtr类型直接=即可)，IID_IDimXpertAnnotation是要查询的接口类型
+		swDimXpertAnnotation = CComPtr<IDimXpertAnnotation>(myAnnotationData);//用构造函数将IDimXpertAnnotation*普通指针转为CComPtr智能指针
+
+		//a.获取标注名称
+		result = swDimXpertAnnotation->get_Name(&dimXpertAnnotationName);
+		//if (result != S_OK) {
+		//	CoUninitialize();										
+		//	return false;
+		//}
+		dimXpertAnnotationNameStr = GbkToUtf8(_com_util::ConvertBSTRToString(dimXpertAnnotationName));
+
+		//b.获取标注类型
+		swDimXpertAnnotationType_e dimXpertAnnotationType;
+		result = swDimXpertAnnotation->get_Type(&dimXpertAnnotationType);
+
+		//c.获取公差
+		double toleranceSize = 0;
+		int toleranceLevel = 0;
+		std::string datumName;
+		std::vector<std::string> toleranceDatumNames;
+		swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;
+		ReadAnnotationData(dimXpertAnnotationType, &toleranceSize, &toleranceLevel, &datumName, toleranceDatumNames, &MCMType);//可以返回公差等级（1.轴/孔 2.线性尺寸 3.形位公差 三者等级定义不同）
+
+		//存入特征面数组的标注数组
+		
+		MyAnnotation myAnnotation;
+		myAnnotation.Name = dimXpertAnnotationNameStr;
+		myAnnotation.Type = dimXpertAnnotationType;
+		myAnnotation.IsTolerance = dimXpertAnnotationType != swDimXpertDatum ? 1 : 0;
+		myAnnotation.AccuracySize = toleranceSize;
+		myAnnotation.AccuracyLevel = toleranceLevel;
+		myAnnotation.IsDatum = dimXpertAnnotationType == swDimXpertDatum ? 1 : 0;
+		myAnnotation.DatumName = datumName;
+		myAnnotation.ToleranceDatumNames = toleranceDatumNames;
+		myAnnotation.hasMCM = MCMType != swDimXpertMaterialConditionModifier_unknown ? 1 : 0;
+		myAnnotation.MCMType = MCMType;
+		mtx.lock();
+		faceFeature.AnnotationArray.push_back(myAnnotation);
+		mtx.unlock();
+	}
+	*/
 }
 
