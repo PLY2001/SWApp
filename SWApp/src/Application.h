@@ -9,9 +9,12 @@
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
-#include <thread>
-#include <mutex>
-#include <atomic>
+// #include <thread>
+// #include <mutex>
+// #include <atomic>
+// #include <omp.h>
+
+#include <io.h>
 
 //SolidWorks
 #include <atlbase.h> //com
@@ -124,7 +127,10 @@ namespace MyApp {
 		std::string CADType = ".SLDPRT";//默认CAD文件类型
 		std::string CADPath = "D:\\Projects\\SWApp\\SolidWorks Part\\";//默认CAD文件路径
 
-		glm::vec3 MassCenter = glm::vec3(0);
+		glm::vec3 MassCenter = glm::vec3(0);//重心坐标
+
+		std::vector<std::string> TotalCADNames;//当前目录下所以CAD文件名
+		bool toAutomatization = false;//是否自动化
 			
 		void EnableDocking();//开启Docking特性
 		void ShowMenuBar();//显示菜单栏
@@ -133,9 +139,9 @@ namespace MyApp {
 		bool ConnectSW();//连接SW
 		bool OpenFile();//打开文件
 		bool ReadProperty();//读取文件属性
+		bool ReadMassProperty();//获取质量属性
 		bool ReadMBD();//读取MBD特征及其标注
 		bool LoadModel();//加载模型
-		bool ReadMassProperty();//获取质量属性
 
 		std::string GbkToUtf8(const char* src_str);//将SW默认文本的GBK编码转为ImGui显示文本用的Utf8编码
 		bool ReadSafeArray(VARIANT* vt, VARENUM vtType, int dimensional, LPVOID* pData, LONG* itemCount);//读取SAFEARRAY数组(输入VARIANT变量，数组元素类型，数组维度，输出数组，输出数组大小)
@@ -148,14 +154,25 @@ namespace MyApp {
 		void GeoTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, std::vector<std::string>& datumNames, swDimXpertMaterialConditionModifier_e* MCMType);//读取形位公差数据
 		void DimTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel);//读取尺寸公差数据
 
-		
+		void GetFiles(std::string path, std::vector<std::string>& files);//读取当前目录下所有CAD文件名
 	
 	public:
 		void ShowMyApp();
 		inline std::unordered_map<std::string, MyFaceFeature>& GetFaceMap() { return FaceMap; };//获取面哈希表的引用
 		inline std::map<SWState, MyState>& GetSWStateMap() { return SWStateMap; };//获取SW交互状态的引用
 		inline std::string GetExportPath() { return CADPath + CADName + "\\"; };//获取保存模型时的路径
+		inline std::string GetCADName() { return CADName; };//获取保存模型时的路径
 		inline glm::vec3 GetMassCenter() { return MassCenter; };//获取质心(毫米)
+		inline bool ShouldAutomatization() { return toAutomatization; }//确定要自动化
+		inline void StopAutomatization() { toAutomatization = false; }//停止自动化
+		
+		std::string GetToOpenFileName(int i);//获取打开模型时的路径
+
+		bool StartOpenFile(std::string inputName);//打开文件
+		bool StartReadProperty();//读取文件属性
+		bool StartReadMassProperty();//获取质量属性
+		bool StartReadMBD();//读取MBD特征及其标注
+		bool StartLoadModel();//加载模型
 
 		long allTime = 0;//MBD读取总耗时
 		long feTime = 0;//特征读取循环耗时（包含标注、面耗时）

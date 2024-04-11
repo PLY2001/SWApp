@@ -70,21 +70,17 @@ namespace MyApp {
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::Connected]].c_str());
 
+		//自动执行
+		ImGui::SameLine();
+		if (ImGui::Button("全自动")) {	
+			TotalCADNames.clear();
+			GetFiles(CADPath, TotalCADNames);
+			toAutomatization = true;		
+		}
+
 		//打开文件按钮
 		if (ImGui::Button("打开文件")) {
-			SWStateMap[SWState::PropertyGot] = MyState::Nothing;
-			SWStateMap[SWState::MassPropertyGot] = MyState::Nothing;
-			SWStateMap[SWState::MBDGot] = MyState::Nothing;
-			SWStateMap[SWState::ModelLoaded] = MyState::Nothing;			
-			if (SWStateMap[SWState::Connected] == MyState::Succeed) {
-				CADName = InputName;
-				myState = OpenFile() ? MyState::Succeed : MyState::Failed;
-				SWStateMap[SWState::FileOpen] = myState;
-			}
-			else {
-				myState = MyState::Nothing;
-				SWStateMap[SWState::FileOpen] = myState;
-			}
+			StartOpenFile(InputName);
 			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
@@ -92,15 +88,7 @@ namespace MyApp {
 
 		//读取属性按钮
 		if (ImGui::Button("读取文档属性")) {
-			if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] == 1) {
-				myState = ReadProperty() ? MyState::Succeed : MyState::Failed;
-				SWStateMap[SWState::PropertyGot] = myState;
-			}
-			else
-			{
-				myState = MyState::Nothing;
-				SWStateMap[SWState::PropertyGot] = myState;
-			}
+			StartReadProperty();
 			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
@@ -108,15 +96,7 @@ namespace MyApp {
 
 		//加载质量属性按钮
 		if (ImGui::Button("加载质量属性")) {
-			if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] == 1) {
-				myState = ReadMassProperty() ? MyState::Succeed : MyState::Failed;
-				SWStateMap[SWState::MassPropertyGot] = myState;
-			}
-			else
-			{
-				myState = MyState::Nothing;
-				SWStateMap[SWState::MassPropertyGot] = myState;
-			}
+			StartReadMassProperty();
 			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
@@ -124,15 +104,7 @@ namespace MyApp {
 
 		//读取MBD特征及其标注按钮
 		if (ImGui::Button("读取MBD特征及其标注")) {
-			if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] == 1) {
-				myState = ReadMBD() ? MyState::Succeed : MyState::Failed;
-				SWStateMap[SWState::MBDGot] = myState;
-			}
-			else
-			{
-				myState = MyState::Nothing;
-				SWStateMap[SWState::MBDGot] = myState;
-			}
+			StartReadMBD();
 			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
@@ -145,15 +117,7 @@ namespace MyApp {
 
 		//加载模型按钮
 		if (ImGui::Button("加载模型并显示")) {
-			if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] * (int)SWStateMap[SWState::MassPropertyGot] * (int)SWStateMap[SWState::MBDGot] == 1) {
-				myState = LoadModel() ? MyState::Succeed : MyState::Failed;
-				SWStateMap[SWState::ModelLoaded] = myState;
-			}
-			else
-			{
-				myState = MyState::Nothing;
-				SWStateMap[SWState::ModelLoaded] = myState;
-			}
+			StartLoadModel();
 			//ImGui::OpenPopup("提示");
 		}
 		ImGui::SameLine();
@@ -239,7 +203,94 @@ namespace MyApp {
 
 
 
-    void  MyApplication::EnableDocking()
+	std::string MyApplication::GetToOpenFileName(int i)
+	{
+		if (i + 1 > TotalCADNames.size()) {
+			return "";
+		}
+		return TotalCADNames[i];
+	}
+
+	bool MyApplication::StartOpenFile(std::string inputName)
+	{
+		SWStateMap[SWState::PropertyGot] = MyState::Nothing;
+		SWStateMap[SWState::MassPropertyGot] = MyState::Nothing;
+		SWStateMap[SWState::MBDGot] = MyState::Nothing;
+		SWStateMap[SWState::ModelLoaded] = MyState::Nothing;
+		if (SWStateMap[SWState::Connected] == MyState::Succeed) {
+			CADName = inputName;
+			myState = OpenFile() ? MyState::Succeed : MyState::Failed;
+			SWStateMap[SWState::FileOpen] = myState;
+		}
+		else {
+			myState = MyState::Nothing;
+			SWStateMap[SWState::FileOpen] = myState;
+			return false;
+		}
+		return true;
+	}
+
+	bool MyApplication::StartReadProperty()
+	{
+		if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] == 1) {
+			myState = ReadProperty() ? MyState::Succeed : MyState::Failed;
+			SWStateMap[SWState::PropertyGot] = myState;
+		}
+		else
+		{
+			myState = MyState::Nothing;
+			SWStateMap[SWState::PropertyGot] = myState;
+			return false;
+		}
+		return true;
+	}
+
+	bool MyApplication::StartReadMassProperty()
+	{
+		if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] == 1) {
+			myState = ReadMassProperty() ? MyState::Succeed : MyState::Failed;
+			SWStateMap[SWState::MassPropertyGot] = myState;
+		}
+		else
+		{
+			myState = MyState::Nothing;
+			SWStateMap[SWState::MassPropertyGot] = myState;
+			return false;
+		}
+		return true;		
+	}
+
+	bool MyApplication::StartReadMBD()
+	{
+		if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] == 1) {
+			myState = ReadMBD() ? MyState::Succeed : MyState::Failed;
+			SWStateMap[SWState::MBDGot] = myState;
+		}
+		else
+		{
+			myState = MyState::Nothing;
+			SWStateMap[SWState::MBDGot] = myState;
+			return false;
+		}
+		return true;
+	}
+
+	bool MyApplication::StartLoadModel()
+	{
+		if ((int)SWStateMap[SWState::Connected] * (int)SWStateMap[SWState::FileOpen] * (int)SWStateMap[SWState::MassPropertyGot] * (int)SWStateMap[SWState::MBDGot] == 1) {
+			myState = LoadModel() ? MyState::Succeed : MyState::Failed;
+			SWStateMap[SWState::ModelLoaded] = myState;
+		}
+		else
+		{
+			myState = MyState::Nothing;
+			SWStateMap[SWState::ModelLoaded] = myState;
+			return false;
+		}
+		return true;
+	}
+
+	void  MyApplication::EnableDocking()
     {
         
         static bool opt_fullscreen = false;//false时可关闭ImGui背景
@@ -1064,9 +1115,6 @@ namespace MyApp {
 		return true;
 	}
 
-	
-
-
 	bool MyApplication::LoadModel()
 	{
 		return true;
@@ -1325,7 +1373,35 @@ namespace MyApp {
 		*toleranceLevel = 1;//需用国标判断，需要区分轴/孔和基本尺寸，还需知道面尺寸
 	}
 
-	
+	void MyApplication::GetFiles(std::string path, std::vector<std::string>& files)
+	{
+		//文件句柄
+		intptr_t hFile = 0;
+		//文件信息
+		struct _finddata_t fileinfo;
+		std::string p;
+		if ((hFile = _findfirst(p.assign(path).append("*").c_str(), &fileinfo)) != -1)
+		{
+			do
+			{
+				//如果不是目录或者隐藏文件
+				if (!(fileinfo.attrib & _A_SUBDIR || fileinfo.attrib &_A_HIDDEN))
+				{
+					std::string textstr = fileinfo.name;
+					std::regex pattern("(?=.SLDPRT)");	//只保留文件名，不保留后缀
+					std::string::const_iterator iter_begin = textstr.cbegin();
+					std::string::const_iterator iter_end = textstr.cend();
+					std::smatch matchResult;
+					if (std::regex_search(iter_begin, iter_end, matchResult, pattern)) {
+						files.push_back(matchResult.prefix());
+					}
+					
+				}
+			} while (_findnext(hFile, &fileinfo) == 0);
+			_findclose(hFile);
+		}
+	}
+
 		
 	
 	/*

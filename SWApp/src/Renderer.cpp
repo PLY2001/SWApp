@@ -25,8 +25,8 @@ void Renderer::ClearDepth() const
 void Renderer::CullFace(int mode)
 {
 	if(mode == 0)
-		glCullFace(GL_FRONT);
-	else
 		glCullFace(GL_BACK);
+	else
+		glCullFace(GL_FRONT);
 	glEnable(GL_CULL_FACE);
 }

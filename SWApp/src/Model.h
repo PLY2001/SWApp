@@ -17,7 +17,8 @@ private:
 	unsigned int TextureFromFile(const char* path, const std::string& directory);
 	std::vector<myTexture> textures_loaded;
 	glm::mat4 mModelMatrix;
-	
+	glm::mat4 defaultModelMatrix;
+	glm::mat4 MatrixLerp(glm::mat4 x, glm::mat4 y, float t);
 
 public:
 	Model(std::string path);
@@ -26,6 +27,8 @@ public:
 	void DrawInstanced(Shader& shader, int amount);
 	std::vector<Mesh> meshes;
 	inline glm::mat4& GetModelMatrix() { return mModelMatrix; };
+	inline void SetDefaultModelMatrix() { defaultModelMatrix = mModelMatrix; };
+	void ResetToDefaultModelMatrix(float t);
 	void SetModelMatrixPosition(glm::vec3 Pos);
 	void SetModelMatrixRotation(float Radians, glm::vec3 Axis);
 	void SetModelMatrixScale(glm::vec3 Scale);

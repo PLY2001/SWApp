@@ -172,6 +172,12 @@ unsigned int Model::TextureFromFile(const char* path, const std::string& directo
 	return textureID;
 }
 
+glm::mat4 Model::MatrixLerp(glm::mat4 x, glm::mat4 y, float t)
+{
+	glm::mat4 temp = t * y + (1 - t) * x;
+	return temp;
+}
+
 void Model::Draw(Shader& shader)
 {
 	for (unsigned int i = 0; i < meshes.size(); i++)
@@ -182,6 +188,13 @@ void Model::DrawInstanced(Shader& shader,int amount)
 {
 	for (unsigned int i = 0; i < meshes.size(); i++)
 		meshes[i].DrawInstanced(shader,amount);
+}
+
+void Model::ResetToDefaultModelMatrix(float t)
+{
+	float totalTime = 0.1f;
+	float weight = t / totalTime;
+	mModelMatrix = MatrixLerp(mModelMatrix, defaultModelMatrix, weight);//使mModelMatrix无限趋近于defaultModelMatrix，效果很赞
 }
 
 void Model::SetModelMatrixPosition(glm::vec3 Pos)
