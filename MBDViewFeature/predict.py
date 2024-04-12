@@ -13,9 +13,19 @@ from model import resnet34
 from tqdm import tqdm
 import torch.nn.functional as F
 
+import numpy as np
 import re
 
 def main():
+    modelCount = 5
+    viewCount = 18
+    featureSize = 128
+    picturesType = []
+    for i in range(3):
+        for j in range(3):
+            for k in range(2):
+                picturesType.append([i,j,k])
+
     #matplotlib.use("TKAgg")
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -25,19 +35,31 @@ def main():
          transforms.ToTensor(),
          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
+    plt.figure(figsize=(10, 8))
 
     # load image
-    img_path = "pan1_1_1_0.bmp"  # 搜索这张图
+    inputName = "pan1"
+    img_list = []
+    CADmodelName = "./MBDViewDataset/photos/" + inputName
+    for i in range(viewCount):
+        img_path = CADmodelName + "_" + str(picturesType[i][0]) + "_" + str(picturesType[i][1]) + "_" + str(picturesType[i][2]) + ".bmp"  # 搜索这张图
+        assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
+        img = Image.open(img_path)
+        img = data_transform(img)
+        torchvision.utils.save_image(img, 'out.jpg')
+        # expand batch dimension
+        img = torch.unsqueeze(img, dim=0)
+        img_list.append(img)
+
+    img_path = "MBDViewModelPicture/" + inputName + "_.bmp" # 搜索这张图
     assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
     img = Image.open(img_path)
+
     plt.subplot(231)
+    plt.axis('off')
     plt.imshow(img)
+    plt.rcParams['font.size'] = 20
     plt.title("检索目标")
-    # [N, C, H, W]
-    img = data_transform(img)
-    torchvision.utils.save_image(img, 'out.jpg')
-    # expand batch dimension
-    img = torch.unsqueeze(img, dim=0)
 
     # read dataset
     json_path = './MBDViewDataset.json'
@@ -47,18 +69,26 @@ def main():
     #     data_list = json.load(f)
 
     file = open(json_path, 'r')
-    data_list = []
+    views = np.ones((viewCount, featureSize),dtype=np.float32)
+    CADmodel_list = np.empty((modelCount, viewCount, featureSize), dtype=np.float32)
     view_list = []
     load_bar = tqdm(file.readlines(), file=sys.stdout)
     viewStart = False
     viewStop = True
+    viewIndex = 0
+    modelIndex = 0
     for line in load_bar:
         if line == '    [\n' and viewStop:
             viewStart = True
             continue
         if line == '    ],\n' or line == '    ]\n' and viewStart:
             viewStop = True
-            data_list.append(view_list[:])
+            views[viewIndex, :] = view_list[:]
+            if viewIndex == viewCount - 1:
+                CADmodel_list[modelIndex] = views[:]
+                views = np.ones((viewCount, featureSize),dtype=np.float32)
+                modelIndex = modelIndex + 1
+            viewIndex = (viewIndex + 1) % viewCount
             view_list.clear()
         if viewStart:
             pattern = "[-]?[0-9]+[.]{1}[0-9]*"
@@ -66,11 +96,12 @@ def main():
             if len(match) > 0:
                 num = json.loads(match[0])
                 view_list.append(num)
+
         load_bar.desc = "加载数据库中"
 
 
 
-    data_tensor = torch.tensor(data_list).to(device)
+    CADmodel_tensor = torch.tensor(CADmodel_list).to(device)
     # create model
     model = resnet34().to(device)
 
@@ -80,22 +111,28 @@ def main():
     model.load_state_dict(torch.load(weights_path, map_location=device))
 
     # prediction
+    output_list = []
     model.eval()
     with torch.no_grad():
-        # predict class
-        output = model(img.to(device))
-        output = F.normalize(output, p=2, dim=1)
-
-        # best_similarity = -100.0
+        for img in img_list:
+            output = model(img.to(device))
+            # output = F.normalize(output, p=2, dim=1)
+            output_list.append(output)
+        output_tensor = torch.cat((output_list[:]), 0).to(device)
 
         sim_dic = {}
-        predict_bar = tqdm(range(len(data_tensor)), file=sys.stdout)
+        predict_bar = tqdm(range(len(CADmodel_tensor)), file=sys.stdout)
         for i in predict_bar:
             index = torch.tensor([i]).to(device)
-            view = torch.index_select(data_tensor, 0, index)
-            view = F.normalize(view, p=2, dim=1)
-            similarity = (output@view.t()).item()
-            sim_dic[i] = similarity
+            views = torch.index_select(CADmodel_tensor, 0, index)
+            views = torch.squeeze(views, dim=0)
+            # views = F.normalize(views, p=2, dim=2)
+            similarity = torch.mm(output_tensor, views.t())
+            # similarity = (output@view.t()).item()
+            sim = 0
+            for j in range (viewCount) :
+                sim = sim + similarity[j][j]/viewCount
+            sim_dic[i] = sim
             # if similarity > best_similarity:
             #     best_similarity = similarity
             #     best_index = i
@@ -105,17 +142,19 @@ def main():
     # print(f"best_similarity = {best_similarity}")
 
     # load image
-    fileList = os.listdir('./MBDViewDataset/photos')
+    fileList = os.listdir('./MBDViewModelPicture')
     fileList.sort()
     FileNameList = []
     SimList = []
-    for i in range(5 if 5 < len(data_list) else len(data_list)):
+    for i in range(5 if 5 < len(CADmodel_list) else len(CADmodel_list)):
         thisindex = sim_order[i][0]
-        Target_img_path = "MBDViewDataset/photos/"+fileList[thisindex]
+        Target_img_path = "./MBDViewModelPicture/"+fileList[thisindex]
         img1 = Image.open(Target_img_path)
         plt.subplot(232+i)
+        plt.axis('off')
         plt.imshow(img1)
-        plt.title(f"检索结果{i+1}\n{fileList[thisindex]}\n相似度：{sim_order[i][1]*100:.3f}%")
+        plt.rcParams['font.size'] = 20
+        plt.title(f"检索结果{i+1}\n{fileList[thisindex]}\n相似度：{sim_order[i][1]*100:.2f}%")
         FileNameList.append(fileList[thisindex])
         SimList.append(sim_order[i][1])
 
@@ -131,9 +170,9 @@ def main():
     # with open('SimList.json', 'a') as json_file:
     #     json_file.write(json_str)
 
-    plt.subplots_adjust(left=None, bottom=None, right=None, top=0.75, wspace=1.8, hspace=1.5)
+    plt.subplots_adjust(left=None, bottom=None, right=None, top=0.75, wspace=0.5, hspace=1.0)
     plt.rcParams['font.sans-serif'] = ['FangSong']
-    plt.rcParams['font.size'] = 15
+    plt.rcParams['font.size'] = 30
     plt.suptitle("三维检索系统")
     plt.show()
 

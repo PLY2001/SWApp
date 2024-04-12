@@ -26,21 +26,19 @@ std::unordered_map<std::string, MyApp::MyFaceFeature> faceMap;//获取面哈希�
 std::map<MyApp::SWState, MyApp::MyState> swStateMap;//获取SW交互状态
 
 enum class ViewDirection {
-	FrontView, SideView, VerticalView
-};//视图方向：前视图，侧视图，俯视图
+	FrontView, SideView, VerticalView, ObliqueView
+};//视图方向：前视图，侧视图，俯视图, 斜视图
 ViewDirection viewDirction = ViewDirection::FrontView;//记录当前视图方向
 
 enum class ViewType {
-	Depth, IsDatum_AnnotationType_IsSFSymbol, AccuracySize_AccuracyLevel_hasMCM
+	Depth, IsDatum_AnnotationType_IsSFSymbol, AccuracySize_AccuracyLevel_hasMCM, Diffuse
 };//
-ViewType viewType = ViewType::Depth;//记录当前视图方向
+ViewType viewType = ViewType::Depth;//记录当前视图类型
 
 glm::vec3 GetRGB(MyApp::MyFaceFeature faceFeature, ViewType viewType) { //根据视图类型求出该面网格所含MBD信息对应的RGB颜色
     glm::vec3 color;
     switch (viewType)
     {
-    case ViewType::Depth:
-        break;
     case ViewType::IsDatum_AnnotationType_IsSFSymbol:
         color.x = (float)faceFeature.AnnotationArray[0].IsDatum * 0.7f;
         color.y = (float)faceFeature.AnnotationArray[0].Type / 255.0f;
@@ -71,25 +69,24 @@ unsigned int WinHeight = 600;
 float PictureSize = 50.0f; //正交投影取景范围大小
 
 //照相机位置、前向、上向
-glm::vec3 cameraPos[3] = { glm::vec3(0.0f, 0.0f, PictureSize + 1.0f),  glm::vec3(-PictureSize - 1.0f, 0.0f, 0.0f), glm::vec3(0.0f, PictureSize + 1.0f, 0.0f) };
-glm::vec3 cameraFront[3] = { glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f) };
-glm::vec3 cameraUp[3] = { glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f) };
+glm::vec3 cameraPos[4] = { glm::vec3(0.0f, 0.0f, PictureSize + 1.0f),  glm::vec3(-PictureSize - 1.0f, 0.0f, 0.0f), glm::vec3(0.0f, PictureSize + 1.0f, 0.0f) , glm::vec3(-PictureSize - 1.0f, PictureSize - 1.0f,  PictureSize - 1.0f) / 1.732f };
+glm::vec3 cameraFront[4] = { glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(1.0f, -1.0f, -1.0f), };
+glm::vec3 cameraUp[4] = { glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f),  glm::vec3(0.0f, 1.0f, 0.0f) };
 
 bool modelLoaded = false;//是否导入了模型
 bool toRotate = false;//是否旋转模型
 
 bool toTakePictures = false;//是否拍照
 bool lastFileFinished = true;//上一CAD文件是否拍照完成
-int fileIndex = 0;//当前文件索引
 
-int picturesType[18][3];//该表存储了每个截图（18张）对应的模式（方向、类型、剔除）
+int picturesType[19][3];//该表存储了每个截图（18张 + 略缩图）对应的模式（方向、类型、剔除）
 int pictureIndex = 0;//截图索引
 
 bool TakingPicture(std::string fileName, std::string filePath) { //截屏并保存
 	unsigned char* picture = new unsigned char[WinWidth * WinHeight * 3];
 	glReadPixels(0, 0, WinWidth, WinHeight, GL_BGR, GL_UNSIGNED_BYTE, picture);
 
-    std::string name = "D:\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset\\photos\\" + fileName + "_" + std::to_string((int)viewDirction) + "_" + std::to_string((int)viewType) + "_" + std::to_string((int)cullMode) + ".bmp";
+    std::string name = filePath + fileName + "_" + std::to_string((int)viewDirction) + "_" + std::to_string((int)viewType) + "_" + std::to_string((int)cullMode) + ".bmp";
 	FILE* pFile = fopen(name.c_str(), "wb");
 	if (pFile) {
 		BITMAPFILEHEADER bfh;
@@ -130,14 +127,16 @@ void LoadModel(std::unordered_map<std::string, Model>& modelMap, std::unordered_
         //尺寸归一化
 		thisScale = model.GetNormalizeScale(App.GetMassCenter());//求出每个面模型的缩放尺寸
 		minScale = thisScale < minScale ? thisScale : minScale;//得到最小的缩放尺寸   
-        modelMap[face.first].SetModelMatrixScale(glm::vec3(minScale));
-		modelMap[face.first].SetModelMatrixPosition(-App.GetMassCenter()); //以质心置中 
-		modelMap[face.first].SetDefaultModelMatrix(); //设定默认Model矩阵
+        
 	}
 
 	//创建实例
 	instanceMap.clear();
 	for (auto model : modelMap) {
+		modelMap[model.first].SetModelMatrixScale(glm::vec3(minScale)); //尺寸归一化
+		modelMap[model.first].SetModelMatrixPosition(-App.GetMassCenter()); //以质心置中 
+		modelMap[model.first].SetDefaultModelMatrix(); //设定默认Model矩阵
+
 		InstanceBuffer instance(sizeof(glm::mat4), &model.second.GetModelMatrix());
 		instance.AddInstanceBuffermat4(model.second.meshes[0].vaID, 3);
 		instanceMap[model.first] = instance;
@@ -232,13 +231,16 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			}
 		}
 	}
+    picturesType[18][0] = 3;
+    picturesType[18][1] = 3;
+    picturesType[18][2] = 0;
 
     //主循环
     while (!glfwWindowShouldClose(window))
     {
 
         if (App.ShouldAutomatization() && lastFileFinished) {     //自动化读取文件
-            std::string name = App.GetToOpenFileName(fileIndex);
+            std::string name = App.GetNextToOpenFileName();
             if (name != "") {
 				//1.打开文件
 				App.StartOpenFile(name);
@@ -256,6 +258,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				toTakePictures = true;
                 pictureIndex = 0;
 				lastFileFinished = false;
+                //7.保存略缩图
+                CString modelPicturePath;
+				std::string modelPicturePathStr = App.GetModelPictureExportPath() + App.GetCADName() + "_.bmp";
+                modelPicturePath = CA2T(modelPicturePathStr.c_str());
+                App.SaveBitmapToFile(App.GetThumbnailEx(), modelPicturePath);
             }
             else {
                 App.StopAutomatization();//如果文件读取完毕就停止自动化
@@ -265,16 +272,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		//设定拍照模式
 		if (toTakePictures) {
-			if (pictureIndex < 18) {
+			if (pictureIndex < 19) {
 				viewDirction = (ViewDirection)(picturesType[pictureIndex][0]);
 				viewType = (ViewType)(picturesType[pictureIndex][1]);
 				cullMode = (CullMode)(picturesType[pictureIndex][2]);
-				pictureIndex++;
 			}
 			else {
 				toTakePictures = false;
 				lastFileFinished = true;//18张截图拍完后说明要换下一CAD文件
-				fileIndex++;
 			}
 		}
 
@@ -362,7 +367,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         if (ImGui::Button("保存视图") ) {
             TakingPicture(App.GetCADName(), App.GetExportPath());
         }
-        
+        ImGui::SameLine();     
         //正交投影取景框大小
         //ImGui::DragFloat("取景框大小", &PictureSize, 0.1f);
         //视图方向选择
@@ -371,12 +376,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         ImGui::RadioButton("侧视图", (int*)&viewDirction, (int)ViewDirection::SideView);
         ImGui::SameLine();
         ImGui::RadioButton("俯视图", (int*)&viewDirction, (int)ViewDirection::VerticalView);
+        ImGui::SameLine();
+        ImGui::RadioButton("斜视图", (int*)&viewDirction, (int)ViewDirection::ObliqueView);
         //视图类型
         ImGui::RadioButton("深度", (int*)&viewType, (int)ViewType::Depth);
         ImGui::SameLine();
         ImGui::RadioButton("基准_标注类型_粗糙度", (int*)&viewType, (int)ViewType::IsDatum_AnnotationType_IsSFSymbol);
-		ImGui::SameLine(); 
         ImGui::RadioButton("标注大小_标注等级_公差实体状态", (int*)&viewType, (int)ViewType::AccuracySize_AccuracyLevel_hasMCM);
+		ImGui::RadioButton("漫反射", (int*)&viewType, (int)ViewType::Diffuse);
 		//剔除模式选择
 		ImGui::RadioButton("剔除反面", (int*)&cullMode, (int)CullMode::CullBack);
 		ImGui::SameLine();
@@ -409,7 +416,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         glfwSwapBuffers(window);
 
         if(toTakePictures) { //一帧结束后对该帧截图
-            TakingPicture(App.GetCADName(), App.GetExportPath());
+            if (pictureIndex < 18) {
+                TakingPicture(App.GetCADName(), App.GetPictureExportPath());
+            }
+            else {
+                //TakingPicture(App.GetCADName(), App.GetModelPictureExportPath());
+            }
+            pictureIndex++;
         }
     }
 

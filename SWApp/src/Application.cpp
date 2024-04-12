@@ -75,7 +75,8 @@ namespace MyApp {
 		if (ImGui::Button("全自动")) {	
 			TotalCADNames.clear();
 			GetFiles(CADPath, TotalCADNames);
-			toAutomatization = true;		
+			toAutomatization = true;	
+			fileIndex = 0;
 		}
 
 		//打开文件按钮
@@ -203,12 +204,14 @@ namespace MyApp {
 
 
 
-	std::string MyApplication::GetToOpenFileName(int i)
+	std::string MyApplication::GetNextToOpenFileName()
 	{
-		if (i + 1 > TotalCADNames.size()) {
+		if (fileIndex + 1 > TotalCADNames.size()) {
 			return "";
 		}
-		return TotalCADNames[i];
+		std::string fileName = TotalCADNames[fileIndex];
+		fileIndex++;
+		return fileName;
 	}
 
 	bool MyApplication::StartOpenFile(std::string inputName)
@@ -1402,7 +1405,136 @@ namespace MyApp {
 		}
 	}
 
-		
+	HBITMAP MyApplication::GetThumbnailEx()
+	{
+		WCHAR* path = multi_Byte_To_Wide_Char(CADPath + CADName + CADType);
+		// Get the thumbnail
+		IShellItem* item = nullptr;
+		result = SHCreateItemFromParsingName(path, nullptr, IID_PPV_ARGS(&item));
+
+		IThumbnailCache* cache = nullptr;
+		result = CoCreateInstance(
+			CLSID_LocalThumbnailCache,
+			nullptr,
+			CLSCTX_INPROC,
+			IID_PPV_ARGS(&cache));
+
+		ISharedBitmap* shared_bitmap;
+		result = cache->GetThumbnail(
+			item,
+			48 * 64,
+			WTS_EXTRACT,
+			&shared_bitmap,
+			nullptr,
+			nullptr);
+
+		// Retrieve thumbnail HBITMAP
+		HBITMAP hbitmap = NULL;
+		result = shared_bitmap->GetSharedBitmap(&hbitmap);
+
+		return hbitmap;
+	}
+
+	BOOL MyApplication::SaveBitmapToFile(HBITMAP hBitmap, const CString& szfilename)
+	{
+		//计算位图文件每个像素所占字节数              
+		HDC hDC = CreateDC("DISPLAY", NULL, NULL, NULL);
+		int iBits = GetDeviceCaps(hDC, BITSPIXEL) * GetDeviceCaps(hDC, PLANES);
+		DeleteDC(hDC);
+		//位图中每象素所占字节数
+		WORD wBitCount = 0;
+		if (iBits <= 1)
+			wBitCount = 1;
+		else  if (iBits <= 4)
+			wBitCount = 4;
+		else if (iBits <= 8)
+			wBitCount = 8;
+		else
+			wBitCount = 24;
+
+		BITMAP Bitmap = {};
+		GetObject(hBitmap, sizeof(Bitmap), (LPSTR)&Bitmap);
+		BITMAPINFOHEADER bi = {};
+		bi.biSize = sizeof(BITMAPINFOHEADER);
+		bi.biWidth = Bitmap.bmWidth;
+		bi.biHeight = Bitmap.bmHeight;
+		bi.biPlanes = 1;
+		bi.biBitCount = wBitCount;
+		bi.biCompression = BI_RGB;
+
+		DWORD dwBmBitsSize = 16 * ((Bitmap.bmWidth * wBitCount + 31) / 32) * 4 * Bitmap.bmHeight;
+
+		//为位图内容分配内存              
+		DWORD dwPaletteSize = 0;
+		HANDLE hDib = GlobalAlloc(GHND, dwBmBitsSize + dwPaletteSize + sizeof(BITMAPINFOHEADER));
+		LPBITMAPINFOHEADER lpbi = (LPBITMAPINFOHEADER)GlobalLock(hDib);
+		*lpbi = bi;
+
+		// 处理调色板
+		HANDLE hOldPal = NULL;
+		HANDLE hPal = GetStockObject(DEFAULT_PALETTE);
+		if (hPal)
+		{
+			hDC = ::GetDC(NULL);
+			hOldPal = ::SelectPalette(hDC, (HPALETTE)hPal, FALSE);
+			RealizePalette(hDC);
+		}
+
+		//位图文件大小写入文件字节数              
+		DWORD dwDIBSize = 0;
+		DWORD dwWritten = 0;
+
+		// 获取该调色板下新的像素值              
+		GetDIBits(hDC, hBitmap, 0, (UINT)Bitmap.bmHeight,
+			(LPSTR)lpbi + sizeof(BITMAPINFOHEADER) + dwPaletteSize,
+			(BITMAPINFO*)lpbi, DIB_RGB_COLORS);
+
+		//恢复调色板                  
+		if (hOldPal)
+		{
+			::SelectPalette(hDC, (HPALETTE)hOldPal, TRUE);
+			RealizePalette(hDC);
+			::ReleaseDC(NULL, hDC);
+		}
+
+		//创建位图文件                  
+		HANDLE fh = CreateFile(szfilename, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+			FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+
+		if (fh == INVALID_HANDLE_VALUE)
+			return FALSE;
+
+		// 设置位图文件头              
+		BITMAPFILEHEADER bmfHdr = {};
+		bmfHdr.bfType = 0x4D42;     //"BM"              
+		dwDIBSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + dwPaletteSize + dwBmBitsSize;
+		bmfHdr.bfSize = dwDIBSize;
+		bmfHdr.bfOffBits = (DWORD)sizeof(BITMAPFILEHEADER) + (DWORD)sizeof(BITMAPINFOHEADER) + dwPaletteSize;
+
+		// 写入位图文件头              
+		WriteFile(fh, (LPSTR)&bmfHdr, sizeof(BITMAPFILEHEADER), &dwWritten, NULL);
+		// 写入位图文件其余内容              
+		WriteFile(fh, (LPSTR)lpbi, dwDIBSize, &dwWritten, NULL);
+		// 清除                  
+		GlobalUnlock(hDib);
+		GlobalFree(hDib);
+		CloseHandle(fh);
+
+		return TRUE;
+	}
+
+
+	wchar_t* MyApplication::multi_Byte_To_Wide_Char(const std::string& pKey)
+	{
+		//string 转 char*
+		const char* pCStrKey = pKey.c_str();
+		//第一次调用返回转换后的字符串长度，用于确认为wchar_t*开辟多大的内存空间
+		int pSize = MultiByteToWideChar(CP_OEMCP, 0, pCStrKey, strlen(pCStrKey) + 1, NULL, 0);
+		wchar_t* pWCStrKey = new wchar_t[pSize];
+		//第二次调用将单字节字符串转换成双字节字符串
+		MultiByteToWideChar(CP_OEMCP, 0, pCStrKey, strlen(pCStrKey) + 1, pWCStrKey, pSize);
+		return pWCStrKey;
+	}
 	
 	/*
 	void MyApplication::FeatureLoop(int feIndex, IDispatch**& myfeData)

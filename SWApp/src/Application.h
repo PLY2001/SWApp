@@ -14,7 +14,11 @@
 // #include <atomic>
 // #include <omp.h>
 
-#include <io.h>
+#include <io.h> //获取目录文件名
+
+#include <shobjidl_core.h>//获取略缩图
+#include <thumbcache.h>
+#include <atlstr.h>
 
 //SolidWorks
 #include <atlbase.h> //com
@@ -131,6 +135,8 @@ namespace MyApp {
 
 		std::vector<std::string> TotalCADNames;//当前目录下所以CAD文件名
 		bool toAutomatization = false;//是否自动化
+
+		int fileIndex = 0;
 			
 		void EnableDocking();//开启Docking特性
 		void ShowMenuBar();//显示菜单栏
@@ -148,6 +154,7 @@ namespace MyApp {
 		template<typename T>
 		bool CreatVARIANTArray(int size, VARENUM type, T* buffer, VARIANT* array);//创建含SAFEARRAY的VARIANT变量(数组大小，数组元素类型，输入数组，输出VARIANT变量)
 		double ReadDoubleFromString(std::string textstr);//读取字符串中的小数，如6.3
+		wchar_t* multi_Byte_To_Wide_Char(const std::string& pKey);
 		
 		void ReadAnnotationData(swDimXpertAnnotationType_e annoType,double* toleranceSize, int* toleranceLevel,std::string* myDatumName, std::vector<std::string>& datumNames,swDimXpertMaterialConditionModifier_e* MCMType);//读取标注数据
 		void DatumData(std::string* myDatumName);//读取基准信息
@@ -161,12 +168,16 @@ namespace MyApp {
 		inline std::unordered_map<std::string, MyFaceFeature>& GetFaceMap() { return FaceMap; };//获取面哈希表的引用
 		inline std::map<SWState, MyState>& GetSWStateMap() { return SWStateMap; };//获取SW交互状态的引用
 		inline std::string GetExportPath() { return CADPath + CADName + "\\"; };//获取保存模型时的路径
+		inline std::string GetPictureExportPath() { return "D:\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset\\photos\\"; };//获取保存模型时的路径
+		inline std::string GetModelPictureExportPath() { return "D:\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewModelPicture\\"; };//获取保存模型时的路径
 		inline std::string GetCADName() { return CADName; };//获取保存模型时的路径
 		inline glm::vec3 GetMassCenter() { return MassCenter; };//获取质心(毫米)
 		inline bool ShouldAutomatization() { return toAutomatization; }//确定要自动化
 		inline void StopAutomatization() { toAutomatization = false; }//停止自动化
 		
-		std::string GetToOpenFileName(int i);//获取打开模型时的路径
+		std::string GetNextToOpenFileName();//获取打开模型时的路径
+		HBITMAP GetThumbnailEx();
+		BOOL SaveBitmapToFile(HBITMAP hBitmap, const CString& szfilename);
 
 		bool StartOpenFile(std::string inputName);//打开文件
 		bool StartReadProperty();//读取文件属性
