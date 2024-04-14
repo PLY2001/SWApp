@@ -3,8 +3,47 @@
 #include <iostream>
 #include "stb_image/stb_image.h"
 #include "GL/glew.h"
+#include <map>
 
+class VertexKey //用于代替glm::vec3作为map的key，其中重载了操作符<
+{
+public:
+	glm::vec3 v;
+	bool operator < (const VertexKey& vk) const
+	{
+		return v.x < vk.v.x ? true : (v.x > vk.v.x ? false : (v.y < vk.v.y ? true : (v.y > vk.v.y ? false : (v.z < vk.v.z))));
+		//if (v.x < vk.v.x) {
+		//	return true;
+		//}
+		//else if (v.x > vk.v.x) {
+		//	return false;
+		//}
+		//else {
+		//	if (v.y < vk.v.y) {
+		//		return true;
+		//	}
+		//	else if (v.y > vk.v.y) {
+		//		return false;
+		//	}
+		//	else {
+		//		return v.z < vk.v.z;
+		//	}
+		//}
+	}
+};
 
+struct BorderVertexList {
+	std::vector<glm::vec3> VertexList[6];//前后左右上下
+};
+
+struct BorderVertexList2D {
+	std::vector<glm::vec2> VertexList[6];//前后左右上下
+};
+
+struct BoxVertex {
+	glm::vec3 MinVertex = glm::vec3(0);
+	glm::vec3 MaxVertex = glm::vec3(0);
+};
 
 class Model
 {
@@ -19,9 +58,13 @@ private:
 	glm::mat4 mModelMatrix;
 	glm::mat4 defaultModelMatrix;
 	glm::mat4 MatrixLerp(glm::mat4 x, glm::mat4 y, float t);
+	bool IsMoreThanVec3(glm::vec3 v1, glm::vec3 v2);
+	glm::vec3 GetVertex3D(glm::vec2 p, int i, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex);
+	glm::vec3 GetNormal(int i);
 
 public:
 	Model(std::string path);
+	Model(std::vector<glm::vec2>& vertexList, int index, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex, glm::vec3 massCenter);
 	Model() = default;
 	void Draw(Shader& shader);
 	void DrawInstanced(Shader& shader, int amount);
@@ -33,4 +76,6 @@ public:
 	void SetModelMatrixRotation(float Radians, glm::vec3 Axis);
 	void SetModelMatrixScale(glm::vec3 Scale);
 	float GetNormalizeScale(glm::vec3 MassCenter);
+	BorderVertexList GetBorderVertexList(glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex, glm::vec3 MassCenter);
+	BoxVertex GetBoxVertex();
 };

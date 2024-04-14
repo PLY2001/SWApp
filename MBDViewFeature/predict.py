@@ -17,13 +17,19 @@ import numpy as np
 import re
 
 def main():
-    modelCount = 5
-    viewCount = 18
+    hasMBD = input("是否考虑MBD？ y/n:")
+    dataset = "MBDViewDataset" if hasMBD == "y" else "MBDViewDataset_noMBD"
+    modelCount = 7
+    viewCount = 24
     featureSize = 128
     picturesType = []
-    for i in range(3):
-        for j in range(3):
-            for k in range(2):
+
+    viewDirCount = 3
+    viewTypeCount = 4
+    cullModeCount = 2
+    for i in range(viewDirCount):
+        for j in range(viewTypeCount):
+            for k in range(cullModeCount):
                 picturesType.append([i,j,k])
 
     #matplotlib.use("TKAgg")
@@ -38,9 +44,9 @@ def main():
     plt.figure(figsize=(10, 8))
 
     # load image
-    inputName = "pan1"
+    inputName = input("检索目标名称:")
     img_list = []
-    CADmodelName = "./MBDViewDataset/photos/" + inputName
+    CADmodelName = "./" + dataset + "/photos/" + inputName
     for i in range(viewCount):
         img_path = CADmodelName + "_" + str(picturesType[i][0]) + "_" + str(picturesType[i][1]) + "_" + str(picturesType[i][2]) + ".bmp"  # 搜索这张图
         assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
@@ -59,10 +65,11 @@ def main():
     plt.axis('off')
     plt.imshow(img)
     plt.rcParams['font.size'] = 20
-    plt.title("检索目标")
+    hasMBDtitle = "(含MBD信息)" if hasMBD == "y" else "(不含MBD信息)"
+    plt.title(f"[检索目标]\n{inputName}\n{hasMBDtitle}")
 
     # read dataset
-    json_path = './MBDViewDataset.json'
+    json_path = "./" + dataset + ".json"
     assert os.path.exists(json_path), "file: '{}' dose not exist.".format(json_path)
 
     # with open(json_path, "r") as f:
@@ -91,17 +98,23 @@ def main():
             viewIndex = (viewIndex + 1) % viewCount
             view_list.clear()
         if viewStart:
-            pattern = "[-]?[0-9]+[.]{1}[0-9]*"
-            match = re.findall(pattern, line)
+            pattern_0 = "[-]?[0-9]+[.]{1}[0-9]+[e]{1}[\\+|-]?[0-9]+"
+            match = re.findall(pattern_0, line)
             if len(match) > 0:
-                num = json.loads(match[0])
+                num = eval(match[0])
                 view_list.append(num)
+            else:
+                pattern = "[-]?[0-9]+[.]{1}[0-9]*"
+                match = re.findall(pattern, line)
+                if len(match) > 0:
+                    num = json.loads(match[0])
+                    view_list.append(num)
 
         load_bar.desc = "加载数据库中"
 
 
 
-    CADmodel_tensor = torch.tensor(CADmodel_list).to(device)
+    CADmodel_tensor = torch.tensor(CADmodel_list).to(device) #pan1在pan之前
     # create model
     model = resnet34().to(device)
 
@@ -154,7 +167,7 @@ def main():
         plt.axis('off')
         plt.imshow(img1)
         plt.rcParams['font.size'] = 20
-        plt.title(f"检索结果{i+1}\n{fileList[thisindex]}\n相似度：{sim_order[i][1]*100:.2f}%")
+        plt.title(f"【检索结果 {i+1}】\n{fileList[thisindex][:-5]}\n相似度：{round(sim_order[i][1].item()*100,1)}%")
         FileNameList.append(fileList[thisindex])
         SimList.append(sim_order[i][1])
 
@@ -171,7 +184,7 @@ def main():
     #     json_file.write(json_str)
 
     plt.subplots_adjust(left=None, bottom=None, right=None, top=0.75, wspace=0.5, hspace=1.0)
-    plt.rcParams['font.sans-serif'] = ['FangSong']
+    plt.rcParams['font.sans-serif'] = ['SimHei']
     plt.rcParams['font.size'] = 30
     plt.suptitle("三维检索系统")
     plt.show()

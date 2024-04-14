@@ -18,15 +18,78 @@ Model::Model(std::string path)
 }
 
 
+Model::Model(std::vector<glm::vec2>& vertexList, int index, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex, glm::vec3 MassCenter)
+{
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+	std::vector<myTexture> textures;
+
+	float clampBorder = 1.01f;
+	glm::vec3 maxBorderPosition = MassCenter + (maxBoxVertex - MassCenter) * clampBorder;
+	glm::vec3 minBorderPosition = MassCenter + (minBoxVertex - MassCenter) * clampBorder;
+
+	for (auto v : vertexList) {		
+		glm::vec3 pos = GetVertex3D(v, index, minBorderPosition, maxBorderPosition);
+		Vertex vertex;
+		vertex.Position.x = pos.x;
+		vertex.Position.y = pos.y;
+		vertex.Position.z = pos.z;
+
+		glm::vec3 normal = GetNormal(index);
+		vertex.Normal.x = normal.x;
+		vertex.Normal.y = normal.y;
+		vertex.Normal.z = normal.z;
+
+		vertices.push_back(vertex);
+	}	
+	int vrtexCount = vertexList.size();
+	int faceCount = vrtexCount - 2;
+// 	if (index == 1 || index == 2 || index == 4) {
+// 		for (int i = 0; i < faceCount; i++) {
+// 			indices.push_back(vrtexCount - 1);
+// 			indices.push_back(i);
+// 			indices.push_back(i + 1);
+// 		}
+// 	}
+// 	else {
+// 		for (int i = faceCount - 1; i > -1; i--) {
+// 			indices.push_back(vrtexCount - 1);
+// 			indices.push_back(i + 1);
+// 			indices.push_back(i);
+// 		}
+// 	}
+// 	
+	for (int i = 0; i < faceCount; i = i + 1) {
+		for (int j = 0; j < faceCount; j++) {
+			indices.push_back(i);
+			indices.push_back(j + 1);
+			indices.push_back(j + 2);
+		}
+
+	}
+
+	//for (int j = 0; j < faceCount; j++) {//     欠 顺      
+	//	indices.push_back(j);
+	//	indices.push_back(j + 1);
+	//	indices.push_back(j + 2);
+	//}
+	//indices.push_back(vrtexCount - 2);
+	//indices.push_back(vrtexCount - 1);
+	//indices.push_back(0);
+
+	Mesh mesh(vertices, indices, textures);
+	meshes.push_back(mesh);
+}
+
 void Model::processNode(aiNode* node, const aiScene* scene)
 {
-	// 处理节点所有的网格（如果有的话）
+	//     诘    械         械幕   
 	for (unsigned int i = 0; i < node->mNumMeshes; i++)
 	{
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
 		meshes.push_back(processMesh(mesh, scene));
 	}
-	// 接下来对它的子节点重复这一过程
+	//              咏诘  馗   一    
 	for (unsigned int i = 0; i < node->mNumChildren; i++)
 	{
 		processNode(node->mChildren[i], scene);
@@ -64,7 +127,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 
 			vertices.push_back(vertex);
 	}
-	// 处理索引
+	//         
 	for (unsigned int i = 0; i < mesh->mNumFaces; i++)
 	{
 		aiFace face = mesh->mFaces[i];
@@ -72,7 +135,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 			indices.push_back(face.mIndices[j]);
 	}
 
-	// 处理材质
+	//        
 	if (mesh->mMaterialIndex >= 0)
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
@@ -92,7 +155,7 @@ std::vector<myTexture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureTyp
 	std::vector<myTexture> textures;
 	if(mat->GetTextureCount(type)>0)
 	{
-	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)//如果没有贴图，则这个count为0，根本没进循环
+	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)//   没    图       count为0      没  循  
 		{
 			aiString str;
 			mat->GetTexture(type, i, &str);
@@ -107,13 +170,13 @@ std::vector<myTexture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureTyp
 				}
 			}
 			if (!skip)
-			{   // 如果纹理还没有被加载，则加载它
+			{   //         没 斜    兀        
 				myTexture texture;
 				texture.slot = TextureFromFile(str.C_Str(), directory);
 				texture.type = typeName;
 				texture.path = str.C_Str();
 				textures.push_back(texture);
-				textures_loaded.push_back(texture); // 添加到已加载的纹理中
+				textures_loaded.push_back(texture); //   拥  鸭  氐       
 			}
 		}
 	}
@@ -178,6 +241,49 @@ glm::mat4 Model::MatrixLerp(glm::mat4 x, glm::mat4 y, float t)
 	return temp;
 }
 
+bool Model::IsMoreThanVec3(glm::vec3 v1, glm::vec3 v2)
+{
+	return (v1.x > v2.x) * (v1.y > v2.y) * (v1.z > v2.z);
+}
+
+glm::vec3 Model::GetVertex3D(glm::vec2 p, int i, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex)
+{
+	switch (i)
+	{
+	case 0:
+		return glm::vec3(p.x, p.y, maxBoxVertex.z);
+	case 1:
+		return glm::vec3(p.x, p.y, minBoxVertex.z);
+	case 2:
+		return glm::vec3(minBoxVertex.x, p.x, p.y);
+	case 3:
+		return glm::vec3(maxBoxVertex.x, p.x, p.y);
+	case 4:
+		return glm::vec3(p.x, maxBoxVertex.y, p.y);
+	case 5:
+		return glm::vec3(p.x, minBoxVertex.y, p.y);
+	}
+}
+
+glm::vec3 Model::GetNormal(int i)
+{
+	switch (i)
+	{
+	case 0:
+		return glm::vec3(0.0f, 0.0f, 1.0f);
+	case 1:
+		return glm::vec3(0.0f, 0.0f, -1.0f);
+	case 2:
+		return glm::vec3(-1.0f, 0.0f, 0.0f);
+	case 3:
+		return glm::vec3(1.0f, 0.0f, 0.0f);
+	case 4:
+		return glm::vec3(0.0f, 1.0f, 0.0f);
+	case 5:
+		return glm::vec3(0.0f, -1.0f, 0.0f);
+	}
+}
+
 void Model::Draw(Shader& shader)
 {
 	for (unsigned int i = 0; i < meshes.size(); i++)
@@ -194,7 +300,7 @@ void Model::ResetToDefaultModelMatrix(float t)
 {
 	float totalTime = 0.1f;
 	float weight = t / totalTime;
-	mModelMatrix = MatrixLerp(mModelMatrix, defaultModelMatrix, weight);//使mModelMatrix无限趋近于defaultModelMatrix，效果很赞
+	mModelMatrix = MatrixLerp(mModelMatrix, defaultModelMatrix, weight);//使mModelMatrix          defaultModelMatrix  效      
 }
 
 void Model::SetModelMatrixPosition(glm::vec3 Pos)
@@ -224,3 +330,62 @@ float Model::GetNormalizeScale(glm::vec3 MassCenter)
 	
 	return 50.0f / maxDis;
 }
+
+BorderVertexList Model::GetBorderVertexList(glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex, glm::vec3 MassCenter)
+{
+	BorderVertexList borderVertexList;
+
+	float clampBorder = 0.99f;
+	glm::vec3 maxBorderPosition = MassCenter + (maxBoxVertex - MassCenter) * clampBorder;
+	glm::vec3 minBorderPosition = MassCenter + (minBoxVertex - MassCenter) * clampBorder;
+	
+	std::map<VertexKey, int> vlist;
+	for (auto mesh : meshes) {
+		for (auto vertex : mesh.vertices) {
+			VertexKey vk;
+			vk.v = vertex.Position;
+			if (vlist.count(vk) > 0) {
+				continue;
+			}
+			else {
+				vlist[vk] = 1;
+			}
+			if (vertex.Position.z > maxBorderPosition.z) {
+				borderVertexList.VertexList[0].push_back(vertex.Position);
+			}
+			if (vertex.Position.z < minBorderPosition.z) {
+				borderVertexList.VertexList[1].push_back(vertex.Position);
+			}
+			if (vertex.Position.x < minBorderPosition.x) {
+				borderVertexList.VertexList[2].push_back(vertex.Position);
+			}
+			if (vertex.Position.x > maxBorderPosition.x) {
+				borderVertexList.VertexList[3].push_back(vertex.Position);
+			}
+			if (vertex.Position.y > maxBorderPosition.y) {
+				borderVertexList.VertexList[4].push_back(vertex.Position);
+			}
+			if (vertex.Position.y < minBorderPosition.y) {
+				borderVertexList.VertexList[5].push_back(vertex.Position);
+			}
+		}
+	}
+	return borderVertexList;
+}
+
+BoxVertex Model::GetBoxVertex()
+{
+	BoxVertex result;
+	glm::vec3 minBoxVertex = meshes[0].vertices[0].Position;
+	glm::vec3 maxBoxVertex = meshes[0].vertices[0].Position;
+	for (auto mesh : meshes) {
+		for (auto vertex : mesh.vertices) {
+			minBoxVertex = IsMoreThanVec3(minBoxVertex, vertex.Position) ? vertex.Position : minBoxVertex;
+			maxBoxVertex = IsMoreThanVec3(vertex.Position, maxBoxVertex) ? vertex.Position : maxBoxVertex;
+		}
+	}
+	result.MinVertex = minBoxVertex;
+	result.MaxVertex = maxBoxVertex;
+	return result;
+}
+

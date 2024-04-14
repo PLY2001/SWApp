@@ -12,8 +12,11 @@ from tqdm import tqdm
 from model import resnet34,Loss_mv_ms
 
 def main():
-    if (os.path.isfile("MBDViewDataset.json")):
-        os.remove("MBDViewDataset.json")
+    hasMBD = input("是否考虑MBD？ y/n:")
+    dataset = "MBDViewDataset" if hasMBD == "y" else "MBDViewDataset_noMBD"
+    viewCount = 24
+    if (os.path.isfile(dataset + ".json")):
+        os.remove(dataset + ".json")
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print("using {} device.".format(device))
@@ -24,7 +27,7 @@ def main():
                                          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
     data_root = os.getcwd()  # get data root path
-    image_path = os.path.join(data_root, "MBDViewDataset")  # flower data set path
+    image_path = os.path.join(data_root, dataset)  # flower data set path
     assert os.path.exists(image_path), "{} path does not exist.".format(image_path)
     dataset1 = datasets.ImageFolder(root=image_path,
                                          transform=data_transform)
@@ -32,7 +35,7 @@ def main():
 
 
 
-    batch_size = 18
+    batch_size = viewCount
     nw = 0 #min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
     print('Using {} dataloader workers every process'.format(nw))
 
@@ -63,7 +66,7 @@ def main():
             # torchvision.utils.save_image(images,'out.jpg')
             outputs = net(images.to(device))
             json_str = json.dumps(outputs.tolist(), indent=4)
-            with open('MBDViewDataset.json', 'a') as json_file:
+            with open(dataset + ".json", 'a') as json_file:
                 json_file.write(json_str)
 
 

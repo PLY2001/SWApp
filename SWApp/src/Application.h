@@ -42,12 +42,15 @@ namespace MyApp {
 		int IsSFSymbol = 0;//是否是表面粗糙度
 		swSFSymType_e SFSType = swSFBasic;//表面粗糙度类型
 
-		//公差
-		int IsTolerance = 0;//是否是尺寸/形位公差
+		//形位公差
+		int IsGeoTolerance = 0;//是否是形位公差
 		std::vector<std::string> ToleranceDatumNames;//公差基准
 		int hasMCM = 0;//形位公差是否有实体状态
 		swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;//实体状态类型，即形位公差标注中的M和L
 
+		//尺寸公差
+		int IsDimTolerance = 0;//是否是尺寸公差
+		double DimSize = 0;//尺寸大小
 	};//标注 
 
 	struct MyFaceFeature {
@@ -129,14 +132,18 @@ namespace MyApp {
 		char InputName[64] = "pipe";//用户输入名
 		std::string CADName = InputName;//默认CAD文件名
 		std::string CADType = ".SLDPRT";//默认CAD文件类型
-		std::string CADPath = "D:\\Projects\\SWApp\\SolidWorks Part\\";//默认CAD文件路径
+		std::string CADPath = "C:\\Users\\PLY\\Desktop\\Files\\Projects\\SWApp\\SolidWorks Part\\";//默认CAD文件路径
 
 		glm::vec3 MassCenter = glm::vec3(0);//重心坐标
+		glm::vec3 MinBoxVertex = glm::vec3(0);//包围盒
+		glm::vec3 MaxBoxVertex = glm::vec3(0);//包围盒
 
 		std::vector<std::string> TotalCADNames;//当前目录下所以CAD文件名
 		bool toAutomatization = false;//是否自动化
 
-		int fileIndex = 0;
+		int fileIndex = 0;//当前CAD文件索引
+
+		bool toShowMBD = true;//是否考虑MBD语义
 			
 		void EnableDocking();//开启Docking特性
 		void ShowMenuBar();//显示菜单栏
@@ -156,10 +163,10 @@ namespace MyApp {
 		double ReadDoubleFromString(std::string textstr);//读取字符串中的小数，如6.3
 		wchar_t* multi_Byte_To_Wide_Char(const std::string& pKey);
 		
-		void ReadAnnotationData(swDimXpertAnnotationType_e annoType,double* toleranceSize, int* toleranceLevel,std::string* myDatumName, std::vector<std::string>& datumNames,swDimXpertMaterialConditionModifier_e* MCMType);//读取标注数据
+		void ReadAnnotationData(swDimXpertAnnotationType_e annoType,double* toleranceSize, int* toleranceLevel,std::string* myDatumName, std::vector<std::string>& datumNames,swDimXpertMaterialConditionModifier_e* MCMType, double* dimSize);//读取标注数据
 		void DatumData(std::string* myDatumName);//读取基准信息
 		void GeoTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, std::vector<std::string>& datumNames, swDimXpertMaterialConditionModifier_e* MCMType);//读取形位公差数据
-		void DimTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel);//读取尺寸公差数据
+		void DimTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, double* dimSize);//读取尺寸公差数据
 
 		void GetFiles(std::string path, std::vector<std::string>& files);//读取当前目录下所有CAD文件名
 	
@@ -168,16 +175,20 @@ namespace MyApp {
 		inline std::unordered_map<std::string, MyFaceFeature>& GetFaceMap() { return FaceMap; };//获取面哈希表的引用
 		inline std::map<SWState, MyState>& GetSWStateMap() { return SWStateMap; };//获取SW交互状态的引用
 		inline std::string GetExportPath() { return CADPath + CADName + "\\"; };//获取保存模型时的路径
-		inline std::string GetPictureExportPath() { return "D:\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset\\photos\\"; };//获取保存模型时的路径
-		inline std::string GetModelPictureExportPath() { return "D:\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewModelPicture\\"; };//获取保存模型时的路径
+		inline std::string GetPictureExportPath() { return toShowMBD? "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset\\photos\\" : "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset_noMBD\\photos\\"; };//获取保存模型时的路径
+		inline std::string GetModelPictureExportPath() { return "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewModelPicture\\"; };//获取保存模型时的路径
 		inline std::string GetCADName() { return CADName; };//获取保存模型时的路径
 		inline glm::vec3 GetMassCenter() { return MassCenter; };//获取质心(毫米)
+		inline glm::vec3 GetMinBoxVertex() { return MinBoxVertex; };//获取包围盒
+		inline glm::vec3 GetMaxBoxVertex() { return MaxBoxVertex; };//获取包围盒
 		inline bool ShouldAutomatization() { return toAutomatization; }//确定要自动化
 		inline void StopAutomatization() { toAutomatization = false; }//停止自动化
+		inline bool ShouldShowMBD() { return toShowMBD; }//确定要考虑MBD语义
 		
 		std::string GetNextToOpenFileName();//获取打开模型时的路径
 		HBITMAP GetThumbnailEx();
 		BOOL SaveBitmapToFile(HBITMAP hBitmap, const CString& szfilename);
+		bool ClearFiles(std::string clearPath);
 
 		bool StartOpenFile(std::string inputName);//打开文件
 		bool StartReadProperty();//读取文件属性

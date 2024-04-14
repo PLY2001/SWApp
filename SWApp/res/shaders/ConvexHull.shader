@@ -49,8 +49,6 @@ struct Material
 out vec4 color; 
 
 uniform Material material;
-uniform vec3 MBDColor;
-uniform int viewType;
 
 in VS_OUT{
 	vec2 v_texcoord;//从顶点着色器传入的变量
@@ -61,12 +59,5 @@ in VS_OUT{
 
 void main() 
 {
-    vec3 worldLight = normalize(vec3(1.0f,1.0f,1.0f)); //获取光源位置
-	vec3 lightColor = vec3(1.0f);
-	vec3 diffuseColor = vec3(0.9f);
-    vec3 diffuse = lightColor * diffuseColor * max(0, dot(worldLight, normalize(fs_in.v_WorldNormal.xyz))); // 计算漫反射
-	float depth = float(gl_FragCoord.z);
-	vec3 finalColor = viewType > 0 ? MBDColor : vec3(depth);
-	finalColor = viewType > 3 ? diffuse : finalColor;
-	color =vec4(finalColor,1.0f);//*(1.0f-shadowColor) //texColor;//u_color;//vec4(0.2,0.7,0.3,1.0); 
+	color =vec4(1.0f,0.0f,0.0f,1.0f);//*(1.0f-shadowColor) //texColor;//u_color;//vec4(0.2,0.7,0.3,1.0); 
 }

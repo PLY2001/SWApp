@@ -44,6 +44,8 @@ namespace MyApp {
 	CComPtr<IMassProperty2> swMassProperty;//质量属性
 	VARIANT massCenterVT;//获取质心的SAFEARRAY数组的载体
 
+	VARIANT boxVT;//获取质心的SAFEARRAY数组的载体
+
 	HRESULT result = NOERROR; //存储函数的输出结果
 	
 	//CComBSTR _messageToUser;// COM Style String for message to user
@@ -72,12 +74,17 @@ namespace MyApp {
 
 		//自动执行
 		ImGui::SameLine();
-		if (ImGui::Button("全自动")) {	
+		if (ImGui::Button("自动化")) {	
 			TotalCADNames.clear();
 			GetFiles(CADPath, TotalCADNames);
+			ClearFiles(GetPictureExportPath());
+			ClearFiles(GetModelPictureExportPath());
 			toAutomatization = true;	
 			fileIndex = 0;
 		}
+		ImGui::SameLine();
+		//是否考虑MBD语义
+		ImGui::Checkbox("MBD?", &toShowMBD);
 
 		//打开文件按钮
 		if (ImGui::Button("打开文件")) {
@@ -162,7 +169,12 @@ namespace MyApp {
 					ImGui::TreePop();
 					ImGui::Separator();
 				}
-				
+				if (ImGui::TreeNode("原始包围盒(毫米)")) {
+					ImGui::Text("Min = (%f,%f,%f)", MinBoxVertex.x, MinBoxVertex.y, MinBoxVertex.z);
+					ImGui::Text("Max = (%f,%f,%f)", MaxBoxVertex.x, MaxBoxVertex.y, MaxBoxVertex.z);
+					ImGui::TreePop();
+					ImGui::Separator();
+				}
 			}
 		}
 
@@ -456,10 +468,10 @@ namespace MyApp {
 	bool MyApplication::OpenFile()
 	{
 		//当已经打开过文件时，先关掉现有文件
-		if (SWStateMap[SWState::FileOpen] == MyState::Succeed) { 
-			VARIANT_BOOL allClosed;
-			result = swApp->CloseAllDocuments(VARIANT_TRUE, &allClosed);
-		}
+		
+		VARIANT_BOOL allClosed;
+		result = swApp->CloseAllDocuments(VARIANT_TRUE, &allClosed);
+		
 
 		// Open Selected file             
 		CComBSTR fileName = (CADPath + CADName + CADType).c_str();
@@ -688,15 +700,18 @@ namespace MyApp {
 				std::string datumName;
 				std::vector<std::string> toleranceDatumNames;
 				swDimXpertMaterialConditionModifier_e MCMType = swDimXpertMaterialConditionModifier_unknown;
-				ReadAnnotationData(dimXpertAnnotationType, &toleranceSize, &toleranceLevel, &datumName, toleranceDatumNames,&MCMType);//可以返回公差等级（1.轴/孔 2.线性尺寸 3.形位公差 三者等级定义不同）
+				double dimSize = 0;
+				ReadAnnotationData(dimXpertAnnotationType, &toleranceSize, &toleranceLevel, &datumName, toleranceDatumNames,&MCMType, &dimSize);//可以返回公差等级（1.轴/孔 2.线性尺寸 3.形位公差 三者等级定义不同）
 			
 				//存入特征面数组的标注数组
 				MyAnnotation myAnnotation;
 				myAnnotation.Name = dimXpertAnnotationNameStr;
 				myAnnotation.Type = dimXpertAnnotationType;	
-				myAnnotation.IsTolerance = dimXpertAnnotationType != swDimXpertDatum ? 1 : 0;
+				myAnnotation.IsGeoTolerance = GeoTolMap[dimXpertAnnotationType] > 0 ? 1 : 0;
+				myAnnotation.IsDimTolerance = DimTolMap[dimXpertAnnotationType] > 0 ? 1 : 0;
 				myAnnotation.AccuracySize = toleranceSize;
 				myAnnotation.AccuracyLevel = toleranceLevel;
+				myAnnotation.DimSize = dimSize;
 				myAnnotation.IsDatum = dimXpertAnnotationType == swDimXpertDatum ? 1 : 0;
 				myAnnotation.DatumName = datumName;
 				myAnnotation.ToleranceDatumNames = toleranceDatumNames;
@@ -1129,7 +1144,6 @@ namespace MyApp {
 		result = swDocE->CreateMassProperty2(&swDispatch);
 		swMassProperty = swDispatch;
 		result = swMassProperty->get_CenterOfMass(&massCenterVT);
-
 		LPVOID mcData = nullptr;
 		LONG mcCount;
 		if (!ReadSafeArray(&massCenterVT, VT_R8, 1, &mcData, &mcCount)) {
@@ -1138,6 +1152,20 @@ namespace MyApp {
 		}
 		double* mymcData = (double*)mcData;
 		MassCenter = glm::vec3(mymcData[0], mymcData[1], mymcData[2]) * 1000.0f; //米->毫米
+		
+		CComPtr<IPartDoc> swPartDoc;//获取零件
+		swPartDoc = swDoc;
+		result = swPartDoc->GetPartBox(VARIANT_TRUE, &boxVT);
+		LPVOID boxData = nullptr;
+		LONG boxCount;
+		if (!ReadSafeArray(&boxVT, VT_R8, 1, &boxData, &boxCount)) {
+			CoUninitialize();
+			return false;
+		}
+		double* myboxData = (double*)boxData;
+		MinBoxVertex = glm::vec3(myboxData[0], myboxData[1], myboxData[2]) * 1000.0f; //米->毫米
+		MaxBoxVertex = glm::vec3(myboxData[3], myboxData[4], myboxData[5]) * 1000.0f; //米->毫米
+
 
 		return true;
 	}
@@ -1247,7 +1275,7 @@ namespace MyApp {
 		}
 	}
 
-	void MyApplication::ReadAnnotationData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, std::string* myDatumName, std::vector<std::string>& datumNames, swDimXpertMaterialConditionModifier_e* MCMType)
+	void MyApplication::ReadAnnotationData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, std::string* myDatumName, std::vector<std::string>& datumNames, swDimXpertMaterialConditionModifier_e* MCMType, double* dimSize)
 	{
 		if (annoType == swDimXpertAnnotationType_e::swDimXpertDatum) {
 			DatumData(myDatumName);
@@ -1256,7 +1284,7 @@ namespace MyApp {
 			GeoTolData(annoType, toleranceSize, toleranceLevel, datumNames, MCMType);
 		}
 		else if (DimTolMap[annoType]>0) {
-			DimTolData(annoType, toleranceSize, toleranceLevel);
+			DimTolData(annoType, toleranceSize, toleranceLevel, dimSize);
 		}
 		else {
 			//类型为unknown
@@ -1347,7 +1375,7 @@ namespace MyApp {
 		
 	}
 
-	void MyApplication::DimTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel)
+	void MyApplication::DimTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, double* dimSize)
 	{
 		CComPtr<IDimXpertDimensionTolerance> dimensionTolerance;
 		dimensionTolerance = swDimXpertAnnotation;
@@ -1364,8 +1392,9 @@ namespace MyApp {
 
 		// the nominal, and upper and lower limits of size of the dimension
 		double nominalValue = 0;
-		result = dimensionTolerance->GetNominalValue(&nominalValue);//名义值,(之间距离1)30 (直径1)10
+		result = dimensionTolerance->GetNominalValue(&nominalValue);//名义值,(之间距离1)30 (直径1)10		
 		nominalValue *= dbl;
+		*dimSize = nominalValue;
 
 		result = dimensionTolerance->GetUpperAndLowerLimit(&upper, &lower, &boolstatus);//(之间距离1)30.5 29.5 (直径1)10.25 9.75
 		upper *= dbl;
@@ -1523,6 +1552,31 @@ namespace MyApp {
 		return TRUE;
 	}
 
+
+	bool MyApplication::ClearFiles(std::string clearPath)
+	{
+		//文件句柄
+		intptr_t hFile = 0;
+		//文件信息
+		struct _finddata_t fileinfo;
+		std::string p;
+		if ((hFile = _findfirst(p.assign(clearPath).append("*").c_str(), &fileinfo)) != -1)
+		{
+			do
+			{
+				int g = 6;
+				//如果不是目录或者隐藏文件
+				if (!(fileinfo.attrib & _A_SUBDIR || fileinfo.attrib & _A_HIDDEN))
+				{
+					std::string path = clearPath + fileinfo.name;
+					g = remove(path.c_str());
+					
+				}
+			} while (_findnext(hFile, &fileinfo) == 0);
+			_findclose(hFile);
+		}
+		return true;
+	}
 
 	wchar_t* MyApplication::multi_Byte_To_Wide_Char(const std::string& pKey)
 	{
