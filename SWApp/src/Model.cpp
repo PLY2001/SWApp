@@ -24,7 +24,7 @@ Model::Model(std::vector<glm::vec2>& vertexList, int index, glm::vec3 minBoxVert
 	std::vector<unsigned int> indices;
 	std::vector<myTexture> textures;
 
-	float clampBorder = 1.01f;
+	float clampBorder = 1.001f;
 	glm::vec3 maxBorderPosition = MassCenter + (maxBoxVertex - MassCenter) * clampBorder;
 	glm::vec3 minBorderPosition = MassCenter + (minBoxVertex - MassCenter) * clampBorder;
 
@@ -59,7 +59,7 @@ Model::Model(std::vector<glm::vec2>& vertexList, int index, glm::vec3 minBoxVert
 // 		}
 // 	}
 // 	
-	for (int i = 0; i < faceCount; i = i + 1) {
+	for (int i = 0; i < 1; i = i + 1) {
 		for (int j = 0; j < faceCount; j++) {
 			indices.push_back(i);
 			indices.push_back(j + 1);
@@ -155,7 +155,7 @@ std::vector<myTexture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureTyp
 	std::vector<myTexture> textures;
 	if(mat->GetTextureCount(type)>0)
 	{
-	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)//   û    ͼ       countΪ0      û  ѭ  
+	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++)
 		{
 			aiString str;
 			mat->GetTexture(type, i, &str);
@@ -170,13 +170,13 @@ std::vector<myTexture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureTyp
 				}
 			}
 			if (!skip)
-			{   //         û б    أ        
+			{  
 				myTexture texture;
 				texture.slot = TextureFromFile(str.C_Str(), directory);
 				texture.type = typeName;
 				texture.path = str.C_Str();
 				textures.push_back(texture);
-				textures_loaded.push_back(texture); //   ӵ  Ѽ  ص       
+				textures_loaded.push_back(texture);
 			}
 		}
 	}
@@ -228,7 +228,7 @@ unsigned int Model::TextureFromFile(const char* path, const std::string& directo
 	}
 	else
 	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
+		//std::cout << "Texture failed to load at path: " << path << std::endl;
 		stbi_image_free(data);
 	}
 
@@ -300,7 +300,7 @@ void Model::ResetToDefaultModelMatrix(float t)
 {
 	float totalTime = 0.1f;
 	float weight = t / totalTime;
-	mModelMatrix = MatrixLerp(mModelMatrix, defaultModelMatrix, weight);//ʹmModelMatrix          defaultModelMatrix  Ч      
+	mModelMatrix = MatrixLerp(mModelMatrix, defaultModelMatrix, weight);//从mModelMatrix向defaultModelMatrix平滑过渡，效果很赞
 }
 
 void Model::SetModelMatrixPosition(glm::vec3 Pos)

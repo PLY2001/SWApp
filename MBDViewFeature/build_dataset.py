@@ -71,7 +71,8 @@ def main():
 
 
     print('Finished Building Dataset')
-
+    modelCount = round(dataset1_num / viewCount)
+    print(modelCount)
 
 if __name__ == '__main__':
     main()

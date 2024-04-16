@@ -12,6 +12,7 @@ private:
 
 public:
 	Texture(const std::string& path);
+	Texture() = default;
 	~Texture();
 
 	void Bind(unsigned int slot = 0) const;//Ä¬ÈÏË÷ÒıÎª0£¨¼´TEXCOORD0£©
@@ -19,4 +20,6 @@ public:
 
 	inline int GetWidth() const { return Width; }
 	inline int GetHeight() const { return Height; }
+
+	inline GLuint GetID() const { return RendererID; }
 };

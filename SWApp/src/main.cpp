@@ -20,8 +20,17 @@
 #include "Model.h"
 #include "UniformBuffer.h"
 #include "InstanceBuffer.h"
+#include "FrameBuffer.h"
+#include "Texture.h"
 
 #include <stack> //栈
+
+#include <Python.h>//Python API
+
+PyObject* pModule_predict = nullptr;
+PyObject* pFunc_predict = nullptr; 
+PyObject* pModule_build_dataset = nullptr;
+PyObject* pFunc_build_dataset = nullptr;
 
 MyApp::MyApplication& App = MyApp::MyApplication::GetInstance();//获取唯一的实例引用
 std::unordered_map<std::string, MyApp::MyFaceFeature> faceMap;//获取面哈希表
@@ -77,8 +86,12 @@ float deltaTime = 0;//每次循环耗时
 float lastTime = 0;//上一次记录时间
 
 //窗口尺寸
-unsigned int WinWidth = 600;
-unsigned int WinHeight = 600;
+unsigned int WinWidth = 1440;// 1330;
+unsigned int WinHeight = 900;// 670;
+//渲染显示尺寸
+unsigned int DisplayWidth = 600;
+unsigned int DisplayHeight = 600;
+
 float PictureSize = 50.0f; //正交投影取景范围大小
 
 //照相机位置、前向、上向
@@ -100,33 +113,110 @@ int pictureIndex = 0;//截图索引
 
 std::vector<glm::vec2> convexHull[6];//6个方向的凸包2d坐标
 
-bool TakingPicture(std::string fileName, std::string filePath) { //截屏并保存
+bool toShowConvexHull = false;//是否显示凸包
+
+std::vector<std::string> ResultCADNameList;
+std::vector<float> ResultSimList;
+std::vector<std::shared_ptr<Texture>> ResultThumbnail(5);
+
+bool toRetrivalWithMBD = true;
+
+std::vector<std::shared_ptr<Texture>> MBDViewDatasetTextures(VIEWCOUNT);
+
+//数据库模型总数
+int datasetModelCount = 0;
+
+#define WIDTHBYTES(bits) (((bits)+31)/32*4)//用于使图像宽度所占字节数为4byte的倍数
+bool PictureResize(unsigned char* pColorDataMid, unsigned char* pColorData, int targetWidth, int targetHeight, int width,int height) {
+	int l_width = WIDTHBYTES(width * 24);//计算位图的实际宽度并确保它为4byte的倍数  
+	int write_width = WIDTHBYTES(targetWidth * 24);//计算写位图的实际宽度并确保它为4byte的倍数
+	for (int hnum = 0; hnum < targetHeight; hnum++) {
+		for (int wnum = 0; wnum < targetWidth; wnum++)
+		{
+			double d_original_img_hnum = hnum * height / (double)targetHeight;
+			double d_original_img_wnum = wnum * width / (double)targetWidth;
+			int i_original_img_hnum = d_original_img_hnum;
+			int i_original_img_wnum = d_original_img_wnum;
+			double distance_to_a_x = d_original_img_wnum - i_original_img_wnum;//在原图像中与a点的水平距离  
+			double distance_to_a_y = d_original_img_hnum - i_original_img_hnum;//在原图像中与a点的垂直距离  
+
+			int original_point_a = i_original_img_hnum * l_width + i_original_img_wnum * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点A    
+			int original_point_b = i_original_img_hnum * l_width + (i_original_img_wnum + 1) * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点B  
+			int original_point_c = (i_original_img_hnum + 1) * l_width + i_original_img_wnum * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点C   
+			int original_point_d = (i_original_img_hnum + 1) * l_width + (i_original_img_wnum + 1) * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点D   
+			if (i_original_img_hnum + 1 >= width)
+			{
+				original_point_c = original_point_a;
+				original_point_d = original_point_b;
+			}
+			if (i_original_img_wnum + 1 >= height)
+			{
+				original_point_b = original_point_a;
+				original_point_d = original_point_c;
+			}
+
+			int pixel_point = hnum * write_width + wnum * 3;//映射尺度变换图像数组位置偏移量  
+			for (int i = 0; i < 3; i++)
+			{
+				pColorDataMid[pixel_point + i] =
+					pColorData[original_point_a + i] * (1 - distance_to_a_x) * (1 - distance_to_a_y) +
+					pColorData[original_point_b + i] * distance_to_a_x * (1 - distance_to_a_y) +
+					pColorData[original_point_c + i] * distance_to_a_y * (1 - distance_to_a_x) +
+					pColorData[original_point_c + i] * distance_to_a_y * distance_to_a_x;
+			}
+
+		}
+	}
+	return true;
+}
+
+
+bool TakingPicture(GLuint framebuffer, std::string fileName, std::string filePath) { //截屏并保存
 	unsigned char* picture = new unsigned char[WinWidth * WinHeight * 3];
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	//glBindBuffer(GL_FRAMEBUFFER, framebuffer);
 	glReadPixels(0, 0, WinWidth, WinHeight, GL_BGR, GL_UNSIGNED_BYTE, picture);
+	//WriteBMP(picture, WinWidth, WinHeight);
 
     std::string name = filePath + fileName + "_" + std::to_string((int)viewDirction) + "_" + std::to_string((int)viewType) + "_" + std::to_string((int)cullMode) + ".bmp";
 	FILE* pFile = fopen(name.c_str(), "wb");
-	if (pFile) {
-		BITMAPFILEHEADER bfh;
-		memset(&bfh, 0, sizeof(BITMAPFILEHEADER));
-		bfh.bfType = 0x4D42;
-		bfh.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + WinWidth * WinHeight * 3;
-		bfh.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-		fwrite(&bfh, sizeof(BITMAPFILEHEADER), 1, pFile);
-		BITMAPINFOHEADER bih;
-		memset(&bih, 0, sizeof(BITMAPINFOHEADER));
-		bih.biWidth = WinWidth;
-		bih.biHeight = WinHeight;
-		bih.biBitCount = 24;
-		bih.biSize = sizeof(BITMAPINFOHEADER);
-		fwrite(&bih, sizeof(BITMAPINFOHEADER), 1, pFile);
-		fwrite(picture, 1, WinWidth * WinHeight * 3, pFile);
+	if (pFile) {	
+		//颜色数据总尺寸：
+		const int ColorBufferSize = DisplayWidth * DisplayHeight * 3;
+		//文件头
+		BITMAPFILEHEADER fileHeader;
+		fileHeader.bfType = 0x4D42;	//0x42是'B'；0x4D是'M'
+		fileHeader.bfReserved1 = 0;
+		fileHeader.bfReserved2 = 0;
+		fileHeader.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + ColorBufferSize;
+		fileHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+		//信息头
+		BITMAPINFOHEADER bitmapHeader = { 0 };
+		bitmapHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bitmapHeader.biHeight = DisplayWidth;
+		bitmapHeader.biWidth = DisplayHeight;
+		bitmapHeader.biPlanes = 1;
+		bitmapHeader.biBitCount = 24;
+		bitmapHeader.biSizeImage = ColorBufferSize;
+		bitmapHeader.biCompression = 0; //BI_RGB
+
+		//写入文件头和信息头
+		fwrite(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pFile);
+		fwrite(&bitmapHeader, sizeof(BITMAPINFOHEADER), 1, pFile);
+		//写入颜色数据
+		unsigned char* final_picture = new unsigned char[DisplayWidth * DisplayHeight * 3];
+		PictureResize(final_picture, picture, DisplayWidth, DisplayHeight, WinWidth, WinHeight);
+		fwrite(final_picture, 1, DisplayWidth * DisplayHeight * 3, pFile);
+		fwrite(final_picture, ColorBufferSize, 1, pFile);
+
 		fclose(pFile);
 
 	}
     else {
         return false;
     }
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	delete picture;
     return true;
 }
@@ -167,6 +257,8 @@ double Cross(glm::vec2 v1, glm::vec2 v2) {
 double getangle(glm::vec2 p, glm::vec2 p1, glm::vec2 p2) {
 	glm::vec2 v1(p2.x - p1.x, p2.y - p1.y);
 	glm::vec2 v2(p.x - p1.x, p.y - p1.y);
+	v2 = v2 == glm::vec2(0) ? v1 : v2;
+	v1 = v1 == glm::vec2(0) ? v2 : v1;
 	double theta = atan2((double)Cross(v1, v2), (double)glm::dot(v1, v2));
 	return theta;
 }
@@ -201,24 +293,29 @@ std::vector<glm::vec2> Graham(std::vector<glm::vec2> plist, int psize) { //有�
 	stack.push(plist[0]);
 	stack.push(plist[1]);
 	for (int i = 2; i < psize; i++) {
-		if (Cross(stack.top(), plist[i]) < 0.000001 && Cross(stack.top(), plist[i]) > -0.000001) {//点在线上
+		glm::vec2 p1 = stack.top();
+		stack.pop();
+		glm::vec2 p2 = stack.top();
+		stack.push(p1);
+		if (Cross(stack.top(), plist[i]) < 0.000000001 && Cross(stack.top(), plist[i]) > -0.000000001 && getangle(plist[i], p1, p2) < 0) {//点在线上		
+			double c = Cross(stack.top(), plist[i]);
 			stack.push(plist[i]);
 		}
-		else if (Cross(stack.top(), plist[i]) < 0)//在栈顶点与原点连线的右边
+		else if (Cross(stack.top(), plist[i]) < 0 )//在栈顶点与原点连线的右边
 		{
 			stack.pop();
 			stack.push(plist[i]);
 		}
 		else {
-			glm::vec2 p1 = stack.top();
+			p1 = stack.top();
 			stack.pop();
-			glm::vec2 p2 = stack.top();
-			if (getangle(plist[i], p1, p2) <= 0) {//负角且是钝角，保留
+			p2 = stack.top();
+			if (getangle(plist[i], p1, p2) < 0) {//负角且是钝角，保留
 				stack.push(p1);
 				stack.push(plist[i]);
 			}
 			else {//正角，舍去
-				while (getangle(plist[i], p1, p2) > 0)
+				while (stack.size()>2 && getangle(plist[i], p1, p2) >= 0)
 				{
 					p1 = p2;
 					stack.pop();
@@ -383,9 +480,269 @@ void LoadConvexHullModel(std::vector<Model>& convexHullModelList, std::vector<In
 	}
 }
 
+PyObject* pythonImportModule(const char* pyDir, const char* name) {
+	// 引入当前路径,否则下面模块不能正常导入
+	char tempPath[256] = {};
+	sprintf(tempPath, "sys.path.append('%s')", pyDir);
+	PyRun_SimpleString("import sys");
+	//PyRun_SimpleString("sys.path.append('./')");
+	PyRun_SimpleString(tempPath);
+	//PyRun_SimpleString("import matplotlib.pyplot");
+	//PyRun_SimpleString("matplotlib.pyplot.path.append('C:/Users/PLY/anaconda3/envs/DeepLearning/Lib')");
+	//PyRun_SimpleString("sys.path.append('C:/Users/PLY/anaconda3/envs/DeepLearning/Lib/site-packages')");
+	//PyRun_SimpleString("sys.path.append('C:/Users/PLY/anaconda3/envs/DeepLearning/DLLs')");
+	//PyRun_SimpleString("sys.path.append('C:/Users/PLY/anaconda3/envs/DeepLearning')");
+	
+
+	// import ${name}
+	PyObject* module = PyImport_ImportModule(name);
+	return module;
+}
+
+int callPythonFun_s_i_i(PyObject* module, const char* a, int b, int c) {
+	//获取模块字典属性
+	PyObject* pDict = PyModule_GetDict(module);
+	if (pDict == nullptr) {
+		return 666;
+	}
+
+	//直接获取模块中的函数
+	PyObject* pFunc = PyDict_GetItemString(pDict, "main");
+	if (pFunc == nullptr) {
+		return 666;
+	}
+
+	// 构造python 函数入参， 接收2
+	PyObject* pArgs = PyTuple_New(3);
+	PyTuple_SetItem(pArgs, 0, Py_BuildValue("s", a));
+	PyTuple_SetItem(pArgs, 1, Py_BuildValue("i", b));
+	PyTuple_SetItem(pArgs, 2, Py_BuildValue("i", c));
+
+	//调用函数，并得到 python 类型的返回值
+	PyObject* result = PyEval_CallObject(pFunc, pArgs);
+
+	int ret = 0;
+	//将python类型的返回值转换为c/c++类型
+	PyArg_Parse(result, "i", &ret);
+	return ret;
+}
+
+int callPythonFun(PyObject* module) {
+	//获取模块字典属性
+	PyObject* pDict = PyModule_GetDict(module);
+	if (pDict == nullptr) {
+		return 666;
+	}
+
+	//直接获取模块中的函数
+	PyObject* pFunc = PyDict_GetItemString(pDict, "main");
+	if (pFunc == nullptr) {
+		return 666;
+	}
+
+	//调用函数，并得到 python 类型的返回值
+	PyObject* result = PyEval_CallObject(pFunc, NULL);
+
+	int ret = 0;
+	//将python类型的返回值转换为c/c++类型
+	PyArg_Parse(result, "i", &ret);
+	return ret;
+}
+
+
+bool InitialPython() {
+	//python 初始化
+	Py_SetPythonHome(L"C:/Users/PLY/anaconda3/envs/torchgpu");
+	Py_Initialize();
+	if (!Py_IsInitialized())
+	{
+		return false;
+	}
+	else
+	{
+		pModule_predict = pythonImportModule("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature","predict_c++");
+		pModule_build_dataset = pythonImportModule("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature","build_dataset_c++");
+		//pModule = pythonImportModule("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature","gg");
+		if (pModule_predict == NULL || pModule_build_dataset == NULL) {
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+}
+
+bool ReadResults() {
+	ResultCADNameList.clear();
+	ResultSimList.clear();
+	std::ifstream source("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature/Results/FileNameList.json");
+	std::string line;
+	while (getline(source, line)) {
+		if (line == "[" || line == "]") {
+			continue;
+		}
+		else {
+			if (line.back() == ',') {
+				ResultCADNameList.push_back(line.substr(1, line.size() - 8));
+			}
+			else {
+				ResultCADNameList.push_back(line.substr(1, line.size() - 7));
+			}
+		}
+	}
+
+	std::ifstream source1("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature/Results/SimList.json");
+	std::string line1;
+	while (getline(source1, line1))
+	{
+		if (line1 == "[" || line1 == "]") {
+			continue;
+		}
+		else {
+			if (line1.back() == ',') {
+				float Sim;
+				std::istringstream str1(line1.substr(0, line1.size() - 2));
+				str1 >> Sim;
+				ResultSimList.push_back(Sim);
+			}
+			else {
+				float Sim;
+				std::istringstream str1(line1.substr(0, line1.size() - 1));
+				str1 >> Sim;
+				ResultSimList.push_back(Sim);
+			}
+		}
+
+	}
+	if (ResultCADNameList.size() > 0) {
+		for (int i = 0; i < ResultCADNameList.size(); i++)
+		{
+			ResultThumbnail[i].reset(new Texture("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature/MBDViewModelPicture/" + ResultCADNameList[i] + "_.bmp"));
+		}
+		return true;
+	}	
+	else {
+		return false;
+	}
+
+	
+}
+
+int GetModelCountInDataset(std::string path)
+{
+	int count = 0;
+	//文件句柄
+	intptr_t hFile = 0;
+	//文件信息
+	struct _finddata_t fileinfo;
+	std::string p;
+	if ((hFile = _findfirst(p.assign(path).append("*").c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+			//如果不是目录或者隐藏文件
+			if (!(fileinfo.attrib & _A_SUBDIR || fileinfo.attrib & _A_HIDDEN))
+			{
+				count++;
+			}
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+	}
+	return count;
+}
+
+bool Retrival() {
+	int result = 0;
+	if (datasetModelCount == GetModelCountInDataset(App.GetPictureExportPath(true))/VIEWCOUNT) {
+		result = callPythonFun_s_i_i(pModule_predict, App.GetCADName().c_str(), (int)toRetrivalWithMBD, datasetModelCount);
+	}
+	else {
+		return false;
+	}
+	if (result == 1) {
+		if (ReadResults()) {
+			return true;
+		}
+	}
+	else
+		return false;
+}
+
+int BuildDataset() {
+	int result = callPythonFun(pModule_build_dataset);
+	return result;
+}
+
+std::string SaveThumbnail() {
+	CString modelPicturePath;
+	std::string modelPicturePathStr = App.GetModelPictureExportPath() + App.GetCADName() + "_.bmp";
+	modelPicturePath = CA2T(modelPicturePathStr.c_str());
+	if (App.SaveBitmapToFile(App.GetThumbnailEx(), modelPicturePath))
+		return modelPicturePathStr;
+	else
+		return "";
+}
+
+bool LoadFileInDataset(std::string path,std::string CADName)
+{
+	bool result = false;
+	int viewCount = 0;
+	//std::vector <std::string> fileNames;
+	//文件句柄
+	intptr_t hFile = 0;
+	//文件信息
+	struct _finddata_t fileinfo;
+	std::string p;
+	if ((hFile = _findfirst(p.assign(path).append("*").c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+			//如果不是目录或者隐藏文件
+			if (!(fileinfo.attrib & _A_SUBDIR || fileinfo.attrib & _A_HIDDEN))
+			{
+				std::string textstr = fileinfo.name;
+				std::regex pattern(CADName+"_");	//只保留文件名，不保留后缀
+				std::string::const_iterator iter_begin = textstr.cbegin();
+				std::string::const_iterator iter_end = textstr.cend();
+				std::smatch matchResult;
+				if (std::regex_search(iter_begin, iter_end, matchResult, pattern)) {					
+					MBDViewDatasetTextures[viewCount].reset(new Texture(path + textstr));
+					viewCount++;
+					//fileNames.push_back(matchResult.prefix());	
+					
+				}
+
+			}
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+	}
+	if (viewCount == VIEWCOUNT) {
+		result = true;
+	}
+	return result;
+}
+
+void LoadAllData(std::unordered_map<std::string, Model>& modelMap, std::unordered_map<std::string, InstanceBuffer>& instanceMap, std::vector<Model>& convexHullModelList, std::vector<InstanceBuffer>& convexHullInstanceList) {
+	//2.读取属性
+	App.StartReadProperty();
+	//3.加载质量
+	App.StartReadMassProperty();
+	//4.读取MBD特征及其标注
+	App.StartReadMBD();
+	faceMap = App.GetFaceMap();
+	//5.加载模型
+	App.StartLoadModel();
+	LoadModel(modelMap, instanceMap);
+	LoadConvexHullModel(convexHullModelList, convexHullInstanceList, convexHull, App.GetMinBoxVertex(), App.GetMaxBoxVertex());
+}
+
 // Main code
-//int main(int, char**)
+#ifdef DEBUG
+int main(int, char**)
+#else
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+#endif
 {
     //glfw初始化
     if (!glfwInit())
@@ -397,7 +754,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     glEnable(GL_MULTISAMPLE);//开启MSAA
 
     //创建窗口上下文
-    GLFWwindow* window = glfwCreateWindow(WinWidth, WinHeight, "Display", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WinWidth, WinHeight, "SWApp", nullptr, nullptr);
     if (window == nullptr) {
         glfwTerminate();
         return 1;
@@ -433,6 +790,22 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
+	//初始化python
+	InitialPython();
+
+	//是否成功检索
+	bool retrivalSucessful = false;
+	//是否检索
+	bool isRetrival = false;
+
+	//当前渲染的是否是mbd视图
+	bool isMBDView = true;
+
+	datasetModelCount = GetModelCountInDataset(App.GetPictureExportPath(true))/VIEWCOUNT;//数据库模型数量初始化
+
+	bool hasMBDViewDataset = false;//当前模型是否有MBD视图数据库
+
+
 	//模型哈希表(毫米)
 	std::unordered_map<std::string, Model> modelMap;
 
@@ -458,6 +831,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	Shader convexHullShader("res/shaders/ConvexHull.shader");
 	convexHullShader.Bind();
 	convexHullShader.Unbind();
+
+	FrameBuffer display(WinWidth, WinHeight);
+	display.GenTexture2D();
+
+	std::shared_ptr<Texture> thumbnail;
+	std::vector<std::shared_ptr<Texture>> MBDViews;
 
 	//渲染方面的API
 	Renderer renderer;
@@ -490,46 +869,51 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     {
 
         if (App.ShouldAutomatization() && lastFileFinished) {     //自动化读取文件
-            std::string name = App.GetNextToOpenFileName();
+			toRotate = false;
+			toShowConvexHull = false;
+			std::string name = App.GetNextToOpenFileName();
             if (name != "") {
 				//1.打开文件
 				App.StartOpenFile(name);
-				//2.读取属性
-				App.StartReadProperty();
-				//3.加载质量
-				App.StartReadMassProperty();
-				//4.读取MBD特征及其标注
-				App.StartReadMBD();
-                faceMap = App.GetFaceMap();
-				//5.加载模型
-				App.StartLoadModel();
-                LoadModel(modelMap, instanceMap);
-				//6.准许拍照
+				//2.加载全部数据
+				LoadAllData(modelMap, instanceMap, convexHullModelList, convexHullInstanceList);
+				//3.准许拍照
 				toTakePictures = true;
                 pictureIndex = 0;
 				lastFileFinished = false;
-                //7.保存略缩图
-                CString modelPicturePath;
-				std::string modelPicturePathStr = App.GetModelPictureExportPath() + App.GetCADName() + "_.bmp";
-                modelPicturePath = CA2T(modelPicturePathStr.c_str());
-                App.SaveBitmapToFile(App.GetThumbnailEx(), modelPicturePath);
+                //4.保存略缩图
+				SaveThumbnail();
             }
             else {
                 App.StopAutomatization();//如果文件读取完毕就停止自动化
+				datasetModelCount = BuildDataset();//运行BuildDataset.py
             }
             
         }
 
 		//设定拍照模式
 		if (toTakePictures) {
-			if (pictureIndex < VIEWCOUNT + 1) {
-				viewDirction = (ViewDirection)(picturesType[pictureIndex][0]);
-				viewType = (ViewType)(picturesType[pictureIndex][1]);
-				cullMode = (CullMode)(picturesType[pictureIndex][2]);
+			if (pictureIndex > VIEWCOUNT - 1) {
+				isMBDView = false;
+			}
+			if (pictureIndex < VIEWCOUNT*2) {
+				int index = pictureIndex % VIEWCOUNT;
+				viewDirction = (ViewDirection)(picturesType[index][0]);
+				viewType = (ViewType)(picturesType[index][1]);
+				cullMode = (CullMode)(picturesType[index][2]);
+			}
+			else if (pictureIndex == VIEWCOUNT * 2) {
+				viewDirction = (ViewDirection)(picturesType[VIEWCOUNT][0]);
+				viewType = (ViewType)(picturesType[VIEWCOUNT][1]);
+				cullMode = (CullMode)(picturesType[VIEWCOUNT][2]);
 			}
 			else {
 				toTakePictures = false;
+				isMBDView = true;
 				lastFileFinished = true;//18张截图拍完后说明要换下一CAD文件
+				if (!App.ShouldAutomatization()) {
+					datasetModelCount = BuildDataset();//运行BuildDataset.py
+				}
 			}
 		}
 
@@ -592,6 +976,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		ubo.SetDatamat4(sizeof(glm::mat4), sizeof(glm::mat4), &projectionMatrix);
 
 		//pass
+		display.Bind();//framebuffer
 		glEnable(GL_DEPTH_TEST);
 		renderer.ClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		renderer.ClearDepth();
@@ -600,7 +985,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		shader.Bind();
 		if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
 			for (auto model : modelMap) {
-                ViewType tempViewType = App.ShouldShowMBD() ? viewType : ViewType::Diffuse;
+                ViewType tempViewType = isMBDView ? viewType : ViewType::Diffuse;
                 glm::vec3 MBDColor = GetRGB(faceMap[model.first], tempViewType);
                 shader.SetUniform3f("MBDColor", MBDColor.x, MBDColor.y, MBDColor.z);
                 shader.SetUniform1i("viewType", (int)tempViewType);
@@ -609,15 +994,21 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		}
 		shader.Unbind();
 
-		glDisable(GL_CULL_FACE);
-		convexHullShader.Bind();
-		if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
-			for (auto model : convexHullModelList) {
-				model.DrawInstanced(convexHullShader, 1);
+		if(toShowConvexHull)
+		{
+			glDisable(GL_CULL_FACE);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			convexHullShader.Bind();
+			if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
+				for (auto model : convexHullModelList) {
+					model.DrawInstanced(convexHullShader, 1);
+				}
 			}
+			convexHullShader.Unbind();
+			glDisable(GL_BLEND);
 		}
-		convexHullShader.Unbind();
-		
+		display.Unbind();//framebuffer
 
         //2.渲染ImGui界面
         ImGui_ImplOpenGL3_NewFrame();
@@ -626,39 +1017,48 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
         //MyApp		
 		App.ShowMyApp();
-        
-        ImGui::Begin("Debug");
-        //获取OpenGL错误信息	
-		ImGui::Text(("OpenGL: " + std::to_string(GLCheckError())).c_str());
-        //截图
-        ImGui::Checkbox("旋转?", &toRotate);
-        if (ImGui::Button("保存视图") ) {
-            TakingPicture(App.GetCADName(), App.GetExportPath());
-        }
-        ImGui::Separator();
-        //正交投影取景框大小
-        //ImGui::DragFloat("取景框大小", &PictureSize, 0.1f);
-        //视图方向选择
-        ImGui::RadioButton("正视图", (int*)&viewDirction, (int)ViewDirection::FrontView);
-        ImGui::SameLine();
-        ImGui::RadioButton("侧视图", (int*)&viewDirction, (int)ViewDirection::SideView);
-        ImGui::SameLine();
-        ImGui::RadioButton("俯视图", (int*)&viewDirction, (int)ViewDirection::VerticalView);
-        ImGui::SameLine();
-        ImGui::RadioButton("斜视图", (int*)&viewDirction, (int)ViewDirection::ObliqueView);
-        ImGui::Separator();
-        //视图类型
-        ImGui::RadioButton("深度", (int*)&viewType, (int)ViewType::Depth);
-        ImGui::RadioButton("基准_粗糙度_粗糙度值", (int*)&viewType, (int)ViewType::IsDatum_IsSFSymbol_AccuracySize);
-        ImGui::RadioButton("形位公差_公差值_实体状态", (int*)&viewType, (int)ViewType::IsGeoTolerance_AccuracySize_hasMCM);
-        ImGui::RadioButton("尺寸公差_尺寸值_公差值", (int*)&viewType, (int)ViewType::IsDimTolerance_DimSize_AccuracySize);
+
+		ImGui::Begin("显示");
+		ImGui::Image((GLuint*)display.GetTexID(), ImVec2(DisplayWidth, DisplayHeight), ImVec2(0, 1), ImVec2(1, 0), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(1.0f, 1.0f, 1.0f, 0.5f));
+		ImGui::Checkbox("旋转?", &toRotate);
+		ImGui::SameLine();
+		ImGui::Checkbox("显示凸包?", &toShowConvexHull);
+		ImGui::Separator();
+		//正交投影取景框大小
+		//ImGui::DragFloat("取景框大小", &PictureSize, 0.1f);
+		//视图方向选择
+		ImGui::RadioButton("正视图", (int*)&viewDirction, (int)ViewDirection::FrontView);
+		ImGui::SameLine();
+		ImGui::RadioButton("侧视图", (int*)&viewDirction, (int)ViewDirection::SideView);
+		ImGui::SameLine();
+		ImGui::RadioButton("俯视图", (int*)&viewDirction, (int)ViewDirection::VerticalView);
+		ImGui::SameLine();
+		ImGui::RadioButton("斜视图", (int*)&viewDirction, (int)ViewDirection::ObliqueView);
+		ImGui::Separator();
+		//视图类型
+		ImGui::RadioButton("深度", (int*)&viewType, (int)ViewType::Depth);
+		ImGui::SameLine();
+		ImGui::RadioButton("基准_粗糙度_粗糙度值", (int*)&viewType, (int)ViewType::IsDatum_IsSFSymbol_AccuracySize);
+		ImGui::SameLine();
+		ImGui::RadioButton("形位公差_公差值_实体状态", (int*)&viewType, (int)ViewType::IsGeoTolerance_AccuracySize_hasMCM);
+		ImGui::RadioButton("尺寸公差_尺寸值_公差值", (int*)&viewType, (int)ViewType::IsDimTolerance_DimSize_AccuracySize);
+		ImGui::SameLine();
 		ImGui::RadioButton("漫反射", (int*)&viewType, (int)ViewType::Diffuse);
-        ImGui::Separator();
+		ImGui::Separator();
 		//剔除模式选择
 		ImGui::RadioButton("剔除反面", (int*)&cullMode, (int)CullMode::CullBack);
 		ImGui::SameLine();
 		ImGui::RadioButton("剔除正面", (int*)&cullMode, (int)CullMode::CullFront);
-        ImGui::Separator();
+		ImGui::Separator();
+		ImGui::End();		
+
+        ImGui::Begin("Debug");
+        //获取OpenGL错误信息	
+		ImGui::Text(("OpenGL: " + std::to_string(GLCheckError())).c_str());
+        //截图
+		if (ImGui::Button("保存视图")) {
+			TakingPicture(display.GetTexID(), App.GetCADName(), App.GetExportPath());
+		}
         //耗时显示
         ImGui::Text("MBD读取总耗时=%f", (float)App.allTime);
         ImGui::Text("特征读取耗时(包含标注、面耗时)=%f", (float)App.feTime);
@@ -668,7 +1068,84 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         ImGui::Text("非MBD面读取耗时=%f", (float)App.bTime);
         ImGui::End();
 
-		
+
+		ImGui::Begin("三维检索");
+		//加载略缩图
+		if (App.ShouldLoadThumbnail()) {
+			std::string modelPicturePathStr = SaveThumbnail();
+			thumbnail.reset(new Texture(modelPicturePathStr));
+			hasMBDViewDataset = LoadFileInDataset(App.GetPictureExportPath(true), App.GetCADName());
+			App.StopLoadThumbnail();
+		}
+		if (thumbnail) {			
+			ImGui::Text("【检索目标】");
+			ImGui::SameLine();
+			ImGui::Text(App.GetCADName().c_str());
+			ImGui::SameLine();		
+			if (ImGui::Button("加入模型特征库")) {
+				if (swStateMap[MyApp::SWState::ModelLoaded] != MyApp::MyState::Succeed) {
+					//加载全部数据
+					LoadAllData(modelMap, instanceMap, convexHullModelList, convexHullInstanceList);
+
+				}
+				//拍照
+				toTakePictures = true;
+				pictureIndex = 0;
+				lastFileFinished = false;
+				hasMBDViewDataset = LoadFileInDataset(App.GetPictureExportPath(true), App.GetCADName());
+			}
+			ImGui::SameLine();
+			if (hasMBDViewDataset) {
+				ImGui::Text("已加入");
+			}
+			else {
+				ImGui::Text("未加入");
+			}
+			ImGui::Image((GLuint*)thumbnail->GetID(), ImVec2(thumbnail->GetWidth() / 20.0f, thumbnail->GetHeight() / 20.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			if(hasMBDViewDataset)
+			{
+				ImGui::SameLine();
+				ImGui::BeginGroup();
+				ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
+				for (int i = 0; i < VIEWCOUNT; i++) {
+					ImGui::Image((GLuint*)MBDViewDatasetTextures[i]->GetID(), ImVec2(thumbnail->GetHeight() / 60.0f, thumbnail->GetHeight() / 60.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+					if ((i + 1) % (VIEWCOUNT / 3) == 0) {
+						continue;
+					}
+					ImGui::SameLine();
+				}
+				ImGui::PopStyleVar();
+				ImGui::EndGroup();
+			}
+			if (ImGui::Button("检索")) {
+				retrivalSucessful = Retrival();
+				isRetrival = true;
+			}
+			ImGui::SameLine();
+			ImGui::Checkbox("含MBD语义?", &toRetrivalWithMBD);
+			if (retrivalSucessful) {
+				ImGui::Separator();
+				for (int i = 0; i < ResultCADNameList.size(); i++) {
+					std::string title = "【检索结果 " + std::to_string(i + 1) + "】";
+					ImGui::Text(title.c_str());
+					ImGui::SameLine();
+					ImGui::Text(ResultCADNameList[i].c_str());
+					ImGui::SameLine();
+					ImGui::Text("相似度:%.2f％", ResultSimList[i] * 100.0f);
+					ImGui::Image((GLuint*)ResultThumbnail[i]->GetID(), ImVec2(ResultThumbnail[i]->GetWidth() / 30.0f, ResultThumbnail[i]->GetHeight() / 30.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+					ImGui::Separator();
+				}
+			}
+			else if (isRetrival) {
+				ImGui::Text("请点击加入模型特征库库");
+			}
+		}
+		else {
+			ImGui::Text("请打开文件");
+		}
+		ImGui::End();
+
+
         //Rendering       
         ImGuiIO& io = ImGui::GetIO();
         io.DisplaySize = ImVec2(WinWidth, WinHeight);
@@ -687,8 +1164,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         glfwSwapBuffers(window);
 
         if(toTakePictures) { //一帧结束后对该帧截图
-            if (pictureIndex < VIEWCOUNT) {
-                TakingPicture(App.GetCADName(), App.GetPictureExportPath());
+            if (pictureIndex < VIEWCOUNT * 2) {
+                TakingPicture(display.GetTexID(), App.GetCADName(), App.GetPictureExportPath(isMBDView));
             }
             else {
                 //TakingPicture(App.GetCADName(), App.GetModelPictureExportPath());

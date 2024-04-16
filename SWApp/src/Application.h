@@ -127,7 +127,6 @@ namespace MyApp {
 			,{swDimXpertDimTol_Width				   ,1}//宽度公差
 		};//MBD标注类型集合：尺寸公差
 
-		bool toSave = true;//读取MBD时是否要保存模型
 
 		char InputName[64] = "pipe";//用户输入名
 		std::string CADName = InputName;//默认CAD文件名
@@ -143,7 +142,9 @@ namespace MyApp {
 
 		int fileIndex = 0;//当前CAD文件索引
 
-		bool toShowMBD = true;//是否考虑MBD语义
+		//bool toShowMBD = true;//是否渲染视图考虑MBD语义
+
+		bool toShowThumbnail = false;//是否显示略缩图
 			
 		void EnableDocking();//开启Docking特性
 		void ShowMenuBar();//显示菜单栏
@@ -175,7 +176,7 @@ namespace MyApp {
 		inline std::unordered_map<std::string, MyFaceFeature>& GetFaceMap() { return FaceMap; };//获取面哈希表的引用
 		inline std::map<SWState, MyState>& GetSWStateMap() { return SWStateMap; };//获取SW交互状态的引用
 		inline std::string GetExportPath() { return CADPath + CADName + "\\"; };//获取保存模型时的路径
-		inline std::string GetPictureExportPath() { return toShowMBD? "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset\\photos\\" : "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset_noMBD\\photos\\"; };//获取保存模型时的路径
+		inline std::string GetPictureExportPath(bool isMBDView) { return isMBDView? "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset\\photos\\" : "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset_noMBD\\photos\\"; };//获取保存模型时的路径
 		inline std::string GetModelPictureExportPath() { return "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewModelPicture\\"; };//获取保存模型时的路径
 		inline std::string GetCADName() { return CADName; };//获取保存模型时的路径
 		inline glm::vec3 GetMassCenter() { return MassCenter; };//获取质心(毫米)
@@ -183,7 +184,10 @@ namespace MyApp {
 		inline glm::vec3 GetMaxBoxVertex() { return MaxBoxVertex; };//获取包围盒
 		inline bool ShouldAutomatization() { return toAutomatization; }//确定要自动化
 		inline void StopAutomatization() { toAutomatization = false; }//停止自动化
-		inline bool ShouldShowMBD() { return toShowMBD; }//确定要考虑MBD语义
+		//inline bool ShouldShowMBD() { return toShowMBD; }//确定要考虑MBD语义
+		inline bool ShouldLoadThumbnail() { return toShowThumbnail; }//确定要加载略缩图
+		inline void StopLoadThumbnail() { toShowThumbnail = false; }//停止加载略缩图
+
 		
 		std::string GetNextToOpenFileName();//获取打开模型时的路径
 		HBITMAP GetThumbnailEx();

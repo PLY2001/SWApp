@@ -10,16 +10,17 @@ import matplotlib.pyplot as plt
 import torchvision
 from model import resnet34
 
-from tqdm import tqdm
+#from tqdm import tqdm
 import torch.nn.functional as F
 
 import numpy as np
 import re
 
-def main():
-    hasMBD = input("是否考虑MBD？ y/n:")
-    dataset = "MBDViewDataset" if hasMBD == "y" else "MBDViewDataset_noMBD"
-    modelCount = 8
+def main(inputName,hasMBD,modelCount):
+    os.chdir("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature")
+    # hasMBD = "y" #input("是否考虑MBD？ y/n:")
+    dataset = "MBDViewDataset" if hasMBD == 1 else "MBDViewDataset_noMBD"
+    #modelCount = 8
     viewCount = 24
     featureSize = 128
     picturesType = []
@@ -44,7 +45,7 @@ def main():
     plt.figure(figsize=(10, 8))
 
     # load image
-    inputName = input("检索目标名称:")
+    # inputName = input("检索目标名称:")
     img_list = []
     CADmodelName = "./" + dataset + "/photos/" + inputName
     for i in range(viewCount):
@@ -79,7 +80,8 @@ def main():
     views = np.ones((viewCount, featureSize),dtype=np.float32)
     CADmodel_list = np.empty((modelCount, viewCount, featureSize), dtype=np.float32)
     view_list = []
-    load_bar = tqdm(file.readlines(), file=sys.stdout)
+    #load_bar = tqdm(file.readlines(), file=sys.stdout)
+    load_bar = file.readlines()
     viewStart = False
     viewStop = True
     viewIndex = 0
@@ -110,7 +112,7 @@ def main():
                     num = json.loads(match[0])
                     view_list.append(num)
 
-        load_bar.desc = "加载数据库中"
+        #load_bar.desc = "加载数据库中"
 
 
 
@@ -134,7 +136,8 @@ def main():
         output_tensor = torch.cat((output_list[:]), 0).to(device)
 
         sim_dic = {}
-        predict_bar = tqdm(range(len(CADmodel_tensor)), file=sys.stdout)
+        #predict_bar = tqdm(range(len(CADmodel_tensor)), file=sys.stdout)
+        predict_bar = range(len(CADmodel_tensor))
         for i in predict_bar:
             index = torch.tensor([i]).to(device)
             views = torch.index_select(CADmodel_tensor, 0, index)
@@ -149,7 +152,7 @@ def main():
             # if similarity > best_similarity:
             #     best_similarity = similarity
             #     best_index = i
-            predict_bar.desc = "检索中"
+            #predict_bar.desc = "检索中"
     sim_order = sorted(sim_dic.items(), key=lambda x: x[1], reverse=True)
 
     # print(f"best_similarity = {best_similarity}")
@@ -171,24 +174,23 @@ def main():
         FileNameList.append(fileList[thisindex])
         SimList.append(sim_order[i][1].tolist())
 
-    # if (os.path.isfile("./Results/FileNameList.json")):
-    #     os.remove("./Results/FileNameList.json")
-    # if (os.path.isfile("./Results/SimList.json")):
-    #     os.remove("./Results/SimList.json")
-    #
-    # json_str = json.dumps(FileNameList, indent=0)
-    # with open('./Results/FileNameList.json', 'a') as json_file:
-    #     json_file.write(json_str)
-    # json_str = json.dumps(SimList, indent=0)
-    # with open('./Results/SimList.json', 'a') as json_file:
-    #     json_file.write(json_str)
+    if (os.path.isfile("./Results/FileNameList.json")):
+        os.remove("./Results/FileNameList.json")
+    if (os.path.isfile("./Results/SimList.json")):
+        os.remove("./Results/SimList.json")
 
-    plt.subplots_adjust(left=None, bottom=None, right=None, top=0.75, wspace=0.5, hspace=1.0)
-    plt.rcParams['font.sans-serif'] = ['SimHei']
-    plt.rcParams['font.size'] = 30
-    plt.suptitle("三维检索系统")
-    plt.show()
+    json_str = json.dumps(FileNameList, indent=0)
+    with open('./Results/FileNameList.json', 'a') as json_file:
+        json_file.write(json_str)
+    json_str = json.dumps(SimList, indent=0)
+    with open('./Results/SimList.json', 'a') as json_file:
+        json_file.write(json_str)
 
 
-if __name__ == '__main__':
-    main()
+    # plt.subplots_adjust(left=None, bottom=None, right=None, top=0.75, wspace=0.5, hspace=1.0)
+    # plt.rcParams['font.sans-serif'] = ['SimHei']
+    # plt.rcParams['font.size'] = 30
+    # plt.suptitle("三维检索系统")
+    # plt.show()
+
+    return 1

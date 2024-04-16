@@ -3,7 +3,7 @@
 
 Texture::Texture(const std::string& path):RendererID(0),FilePath(path),LocalBuffer(nullptr),Width(0),Height(0),BBP(0)
 {
-	stbi_set_flip_vertically_on_load(1);//垂直翻转纹理，因为OpenGL图片原点在左下角，而png图片读取是从左上角开始。
+	//stbi_set_flip_vertically_on_load(1);//垂直翻转纹理，因为OpenGL图片原点在左下角，而png图片读取是从左上角开始。
 	LocalBuffer = stbi_load(path.c_str(), &Width, &Height, &BBP, 4);//使用stb_image库函数加载图片。
 
 	glGenTextures(1, &RendererID);

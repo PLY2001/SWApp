@@ -74,17 +74,18 @@ namespace MyApp {
 
 		//自动执行
 		ImGui::SameLine();
-		if (ImGui::Button("自动化")) {	
+		if (ImGui::Button("自动化采集视图")) {	
 			TotalCADNames.clear();
 			GetFiles(CADPath, TotalCADNames);
-			ClearFiles(GetPictureExportPath());
+			ClearFiles(GetPictureExportPath(true));
+			ClearFiles(GetPictureExportPath(false));
 			ClearFiles(GetModelPictureExportPath());
 			toAutomatization = true;	
 			fileIndex = 0;
 		}
-		ImGui::SameLine();
+		//ImGui::SameLine();
 		//是否考虑MBD语义
-		ImGui::Checkbox("MBD?", &toShowMBD);
+		//ImGui::Checkbox("MBD?", &toShowMBD);
 
 		//打开文件按钮
 		if (ImGui::Button("打开文件")) {
@@ -103,7 +104,7 @@ namespace MyApp {
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::PropertyGot]].c_str());
 
 		//加载质量属性按钮
-		if (ImGui::Button("加载质量属性")) {
+		if (ImGui::Button("加载模型属性")) {
 			StartReadMassProperty();
 			//ImGui::OpenPopup("提示");
 		}
@@ -115,9 +116,6 @@ namespace MyApp {
 			StartReadMBD();
 			//ImGui::OpenPopup("提示");
 		}
-		ImGui::SameLine();
-		//选择是否在读取MBD时导出模型
-		ImGui::Checkbox("导出?", &toSave);
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::MBDGot]].c_str());
 
@@ -161,8 +159,8 @@ namespace MyApp {
 		
 		//显示质量属性
 		if (SWStateMap[SWState::MassPropertyGot] == MyState::Succeed) {
-			if (ImGui::CollapsingHeader("质量属性")) {
-				if (ImGui::TreeNode("质心(毫米)")){
+			if (ImGui::CollapsingHeader("模型属性")) {
+				if (ImGui::TreeNode("重心(毫米)")){
 					ImGui::Text("X = %f",MassCenter.x);
 					ImGui::Text("Y = %f",MassCenter.y);
 					ImGui::Text("Z = %f",MassCenter.z);
@@ -308,7 +306,7 @@ namespace MyApp {
 	void  MyApplication::EnableDocking()
     {
         
-        static bool opt_fullscreen = false;//false时可关闭ImGui背景
+        static bool opt_fullscreen = true;//false时可关闭ImGui背景
         static bool opt_padding = false;
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
@@ -467,8 +465,10 @@ namespace MyApp {
 
 	bool MyApplication::OpenFile()
 	{
-		//当已经打开过文件时，先关掉现有文件
-		
+		//显示略缩图
+		toShowThumbnail = true;
+
+		//先关掉现有文件		
 		VARIANT_BOOL allClosed;
 		result = swApp->CloseAllDocuments(VARIANT_TRUE, &allClosed);
 		
@@ -547,10 +547,9 @@ namespace MyApp {
 	bool MyApplication::ReadMBD()
 	{
 		long allStartTime = GetTickCount();
-		//首先新建以该CAD文件命名的文件夹，供后续保存模型用
-		if (toSave) {
-			bool flag = CreateDirectory((CADPath + CADName).c_str(), NULL);
-		}
+		//首先新建以该CAD文件命名的文件夹，供后续保存模型用		
+		bool flag = CreateDirectory((CADPath + CADName).c_str(), NULL);
+		
 
 		//步骤：swDoc->swConfiguration->swDimXpertManager->swDimXpertPart->Feature->Annotation
 		FaceMap.clear();//清空面哈希表
@@ -832,24 +831,24 @@ namespace MyApp {
 			//FaceMap[FaceName].AppliedFaceNameBSTR = faceName.Copy();//给特征存储所属面的BSTR名(因为string转回BSTR有乱码)
 
 			//d.保存面为stl文件（当有选中的面时，直接保存时默认保存该面）
-			if (toSave) {
-				long error = NOERROR;
-				long warning = NOERROR;
-				VARIANT_BOOL isSaved;
-				result = faceName.Append(".STL");
-				CComBSTR savePath = (CADPath + CADName + "\\").c_str();
-				result = savePath.Append(faceName);
-				result = swApp->SetUserPreferenceToggle(swUserPreferenceToggle_e::swSTLDontTranslateToPositive, VARIANT_TRUE);//设置sw导出stl时不正向化坐标系（保留建模的坐标系）
-				if (result != S_OK) {
-					CoUninitialize();
-					return false;
-				}
-				result = swDoc->SaveAs4(savePath, swSaveAsCurrentVersion, swSaveAsOptions_Silent, &error, &warning, &isSaved);//保存文件
-				if (result != S_OK) {
-					CoUninitialize();
-					return false;
-				}
+			
+			long error = NOERROR;
+			long warning = NOERROR;
+			VARIANT_BOOL isSaved;
+			result = faceName.Append(".STL");
+			CComBSTR savePath = (CADPath + CADName + "\\").c_str();
+			result = savePath.Append(faceName);
+			result = swApp->SetUserPreferenceToggle(swUserPreferenceToggle_e::swSTLDontTranslateToPositive, VARIANT_TRUE);//设置sw导出stl时不正向化坐标系（保留建模的坐标系）
+			if (result != S_OK) {
+				CoUninitialize();
+				return false;
 			}
+			result = swDoc->SaveAs4(savePath, swSaveAsCurrentVersion, swSaveAsOptions_Silent, &error, &warning, &isSaved);//保存文件
+			if (result != S_OK) {
+				CoUninitialize();
+				return false;
+			}
+			
 			
 			
 			
