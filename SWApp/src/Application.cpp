@@ -61,7 +61,7 @@ namespace MyApp {
         ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 		
 		//文件路径
-		ImGui::InputText(".SLDPRT", InputName, 64);
+		//ImGui::InputText(".SLDPRT", InputName, 64);
 
 		//连接SW按钮
 		if (ImGui::Button("连接SW")) {			
@@ -89,8 +89,20 @@ namespace MyApp {
 
 		//打开文件按钮
 		if (ImGui::Button("打开文件")) {
-			StartOpenFile(InputName);
+			if(CopyFileToCADPath())
+			{
+				StartOpenFile(CADName);
+			}
 			//ImGui::OpenPopup("提示");
+		}
+		//更新文件按钮
+		if(SWStateMap[SWState::FileOpen] == MyState::Succeed)
+		{
+			ImGui::SameLine();
+			if (ImGui::Button("更新")) {				
+				StartOpenFile(CADName);				
+				//ImGui::OpenPopup("提示");
+			}
 		}
 		ImGui::SameLine();
 		ImGui::Text(MyStateMessage[(int)SWStateMap[SWState::FileOpen]].c_str());
@@ -303,6 +315,11 @@ namespace MyApp {
 		return true;
 	}
 
+	void MyApplication::StartOpenFileFromButton(std::string inputName)
+	{
+		StartOpenFile(inputName);
+	}
+
 	void  MyApplication::EnableDocking()
     {
         
@@ -370,9 +387,15 @@ namespace MyApp {
 		if (ImGui::BeginMenuBar()) {
 			if (ImGui::BeginMenu(" 关于 ")) {
 				if (ImGui::MenuItem("项目地址")) {
-					toLoad = true;
+					toLoadProjectAddress = true;
 				}
+				ImGui::EndMenu();
 
+			}
+			if (ImGui::BeginMenu(" 设置 ")) {
+				if (ImGui::MenuItem("工作路径")) {
+					toLoadPathSetting = true;
+				}
 				ImGui::EndMenu();
 
 			}
@@ -380,10 +403,15 @@ namespace MyApp {
 		}
 
 
-		if (toLoad)
+		if (toLoadProjectAddress)
 		{
 			ImGui::OpenPopup("提示");
-			toLoad = ShowMessage("github.com/PLY2001/SWApp");
+			toLoadProjectAddress = ShowMessage("github.com/PLY2001/SWApp");
+		}
+		if (toLoadPathSetting)
+		{
+			ImGui::OpenPopup("工作路径设置:config.ini");
+			toLoadPathSetting = ShowPathSetting();
 		}
 	}
 
@@ -429,6 +457,50 @@ namespace MyApp {
 			ImGui::Text(message);
 
 			ImGui::Separator();
+			if (ImGui::Button("关闭", ImVec2(120, 0)))
+			{
+
+				ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
+				return false;
+
+			}
+			ImGui::EndPopup();
+		}
+		return true;
+	}
+	
+	bool MyApplication::ShowPathSetting()
+	{
+		// Always center this window when appearing
+		ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+		ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+		if (ImGui::BeginPopupModal("工作路径设置:config.ini", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::Text("【SW零件库】");
+			ImGui::SameLine();
+			ImGui::Text(CADPath.c_str());
+			ImGui::Text("【SW临时文件】");
+			ImGui::SameLine();
+			ImGui::Text(CADTempPath.c_str());
+			ImGui::Text("【SW零件略缩图库】");
+			ImGui::SameLine();
+			ImGui::Text(ModelPictureExportPath.c_str());
+			ImGui::Text("【MBD视图特征库】");
+			ImGui::SameLine();
+			ImGui::Text(PictureExportPathForMBD.c_str());
+			ImGui::Text("【无MBD视图特征库】");
+			ImGui::SameLine();
+			ImGui::Text(PictureExportPathFornoMBD.c_str());
+			ImGui::Text("【Python库】");
+			ImGui::SameLine();
+			ImGui::Text(PythonHome.c_str());
+			ImGui::Text("【Python神经网络项目】");
+			ImGui::SameLine();
+			ImGui::Text(PythonProjectPath.c_str());
+
+			ImGui::Separator();
 
 
 			if (ImGui::Button("关闭", ImVec2(120, 0)))
@@ -443,11 +515,6 @@ namespace MyApp {
 		}
 		return true;
 	}
-	
-
-			
-
-	
 
 	bool MyApplication::ConnectSW()
 	{
@@ -465,6 +532,7 @@ namespace MyApp {
 
 	bool MyApplication::OpenFile()
 	{
+		
 		//显示略缩图
 		toShowThumbnail = true;
 
@@ -475,6 +543,7 @@ namespace MyApp {
 
 		// Open Selected file             
 		CComBSTR fileName = (CADPath + CADName + CADType).c_str();
+		//CComBSTR fileName = filePath.c_str();
 		long error = NOERROR;
 		long warning = NOERROR;
 
@@ -482,7 +551,7 @@ namespace MyApp {
 		swDoc.Release();
 		result = swApp->OpenDoc6(fileName, (int)swDocumentTypes_e::swDocPART, (int)swOpenDocOptions_e::swOpenDocOptions_Silent, nullptr, &error, &warning, &swDoc);//error=2表示无法找到文件
 
-		if (result!=S_OK || error != NOERROR) {
+		if (result!=S_OK) { // || error != NOERROR 中文文件error==2（找不到文件，但是又能打开）
 			CoUninitialize();
 			return false;
 		}
@@ -547,8 +616,9 @@ namespace MyApp {
 	bool MyApplication::ReadMBD()
 	{
 		long allStartTime = GetTickCount();
-		//首先新建以该CAD文件命名的文件夹，供后续保存模型用		
-		bool flag = CreateDirectory((CADPath + CADName).c_str(), NULL);
+		
+		//首先新建以该CAD文件命名的文件夹，供后续保存模型用	
+		bool flag = CreateDirectory((CADTempPath + CADName).c_str(), NULL);
 		
 
 		//步骤：swDoc->swConfiguration->swDimXpertManager->swDimXpertPart->Feature->Annotation
@@ -836,7 +906,7 @@ namespace MyApp {
 			long warning = NOERROR;
 			VARIANT_BOOL isSaved;
 			result = faceName.Append(".STL");
-			CComBSTR savePath = (CADPath + CADName + "\\").c_str();
+			CComBSTR savePath = (CADTempPath + CADName + "\\").c_str();
 			result = savePath.Append(faceName);
 			result = swApp->SetUserPreferenceToggle(swUserPreferenceToggle_e::swSTLDontTranslateToPositive, VARIANT_TRUE);//设置sw导出stl时不正向化坐标系（保留建模的坐标系）
 			if (result != S_OK) {
@@ -1044,7 +1114,7 @@ namespace MyApp {
 			long error = NOERROR;
 			long warning = NOERROR;
 			VARIANT_BOOL isSaved;
-			CComBSTR savePath = (CADPath + CADName + "\\" + "0_NoMBDFace.STL").c_str();
+			CComBSTR savePath = (CADTempPath + CADName + "\\" + "0_NoMBDFace.STL").c_str();
 			result = swDoc->SaveAs4(savePath, swSaveAsCurrentVersion, swSaveAsOptions_Silent, &error, &warning, &isSaved);//保存文件
 			if (result != S_OK) {
 				CoUninitialize();
@@ -1433,6 +1503,64 @@ namespace MyApp {
 		}
 	}
 
+	std::string MyApplication::GetFilesFromExplorer()
+	{
+		OPENFILENAME ofn;			// 公共对话框结构
+		TCHAR szFile[MAX_PATH];		// 保存获取文件名称的缓冲区   
+		ZeroMemory(&ofn, sizeof(OPENFILENAME));
+		ofn.lStructSize = sizeof(OPENFILENAME);
+		ofn.hwndOwner = NULL;
+		ofn.lpstrFile = szFile;
+		ofn.lpstrFile[0] = '\0';
+		ofn.nMaxFile = sizeof(szFile);
+		ofn.lpstrFilter = _T("Solidworks Part (*.SLDPRT)\0*.SLDPRT\0All\0*.*\0"); //过滤规则
+		ofn.nFilterIndex = 1;
+		ofn.lpstrFileTitle = NULL;
+		ofn.nMaxFileTitle = 0;
+		ofn.lpstrInitialDir = _T("C:\\Program Files");	//指定默认路径
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+		std::string sFolder = "";
+		if (GetOpenFileName(&ofn))
+		{
+			//显示选择的文件。 
+			sFolder = ofn.lpstrFile;
+			return sFolder;
+		}
+		else
+		{
+			return "";
+		}
+	}
+
+	bool MyApplication::CopyFileToCADPath()
+	{
+		std::string filePath = GetFilesFromExplorer();
+		if(filePath!="")
+		{
+			CADName.clear();
+			int i_start = 0;
+			int i_end = 0;
+			for (int i = filePath.size() - 1; i > -1; i--) {
+				if (filePath[i] == '.') {
+					i_end = i;
+				}
+				if (filePath[i] == '\\') {
+					i_start = i;
+					break;
+				}
+			}
+
+			CADName = filePath.substr(i_start + 1, i_end - i_start - 1);
+
+			CopyFile(filePath.c_str(), (CADPath + CADName + CADType).c_str(), FALSE);
+			return true;
+			
+		}
+		else {
+			return false;
+		}
+	}
+
 	HBITMAP MyApplication::GetThumbnailEx()
 	{
 		WCHAR* path = multi_Byte_To_Wide_Char(CADPath + CADName + CADType);
@@ -1587,6 +1715,33 @@ namespace MyApp {
 		//第二次调用将单字节字符串转换成双字节字符串
 		MultiByteToWideChar(CP_OEMCP, 0, pCStrKey, strlen(pCStrKey) + 1, pWCStrKey, pSize);
 		return pWCStrKey;
+	}
+
+	std::string MyApplication::string_To_UTF8(const std::string& str)
+	{
+		int nwLen = ::MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
+
+		wchar_t* pwBuf = new wchar_t[nwLen + 1];//一定要加1，不然会出现尾巴
+		ZeroMemory(pwBuf, nwLen * 2 + 2);
+
+		::MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.length(), pwBuf, nwLen);
+
+		int nLen = ::WideCharToMultiByte(CP_UTF8, 0, pwBuf, -1, NULL, NULL, NULL, NULL);
+
+		char* pBuf = new char[nLen + 1];
+		ZeroMemory(pBuf, nLen + 1);
+
+		::WideCharToMultiByte(CP_UTF8, 0, pwBuf, nwLen, pBuf, nLen, NULL, NULL);
+
+		std::string retStr(pBuf);
+
+		delete[]pwBuf;
+		delete[]pBuf;
+
+		pwBuf = NULL;
+		pBuf = NULL;
+
+		return retStr;
 	}
 	
 	/*
@@ -1852,5 +2007,6 @@ namespace MyApp {
 		mtx.unlock();
 	}
 	*/
+
 }
 

@@ -16,9 +16,12 @@
 
 #include <io.h> //获取目录文件名
 
-#include <shobjidl_core.h>//获取略缩图
+//获取略缩图
+#include <shobjidl_core.h>
 #include <thumbcache.h>
 #include <atlstr.h>
+
+#include <Commdlg.h>//浏览文件
 
 //SolidWorks
 #include <atlbase.h> //com
@@ -83,7 +86,8 @@ namespace MyApp {
 		};//记录SW交互状态
 		MyState myState = MyState::Nothing;//记录程序当前操作状态
 
-		bool toLoad = false;//是否弹出项目地址窗口
+		bool toLoadProjectAddress = false;//是否弹出项目地址窗口
+		bool toLoadPathSetting = false;//是否弹出工作目录设置窗口
 		
 		long DimXpertAnnotationCount = 0;//MBD标注数
 		long DimXpertFeatureCount = 0;//MBD特征数
@@ -128,10 +132,11 @@ namespace MyApp {
 		};//MBD标注类型集合：尺寸公差
 
 
-		char InputName[64] = "pipe";//用户输入名
-		std::string CADName = InputName;//默认CAD文件名
+		//char InputName[64] = "pipe";//用户输入名
+		std::string CADName = "pole";//默认CAD文件名
 		std::string CADType = ".SLDPRT";//默认CAD文件类型
 		std::string CADPath = "C:\\Users\\PLY\\Desktop\\Files\\Projects\\SWApp\\SolidWorks Part\\";//默认CAD文件路径
+		std::string CADTempPath = "C:\\Users\\PLY\\Desktop\\Files\\Projects\\SWApp\\SolidWorks Temp\\";//默认CAD临时文件路径
 
 		glm::vec3 MassCenter = glm::vec3(0);//重心坐标
 		glm::vec3 MinBoxVertex = glm::vec3(0);//包围盒
@@ -145,11 +150,19 @@ namespace MyApp {
 		//bool toShowMBD = true;//是否渲染视图考虑MBD语义
 
 		bool toShowThumbnail = false;//是否显示略缩图
-			
+
+		std::string PictureExportPathForMBD = "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset\\photos\\";
+		std::string PictureExportPathFornoMBD = "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset_noMBD\\photos\\";
+		std::string ModelPictureExportPath = "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewModelPicture\\";
+		
+		std::string PythonHome = "C:/Users/PLY/anaconda3/envs/torchgpu";
+		std::string PythonProjectPath = "C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature";
+
 		void EnableDocking();//开启Docking特性
 		void ShowMenuBar();//显示菜单栏
 		void ShowImguiExample();//显示Imgui示例
 		bool ShowMessage(const char* message);//显示ImGui弹窗，而ImGui::OpenPopup("提示")用于弹出弹窗
+		bool ShowPathSetting();//显示ImGui弹窗，而ImGui::OpenPopup("工作路径设置")用于弹出弹窗
 		bool ConnectSW();//连接SW
 		bool OpenFile();//打开文件
 		bool ReadProperty();//读取文件属性
@@ -163,6 +176,7 @@ namespace MyApp {
 		bool CreatVARIANTArray(int size, VARENUM type, T* buffer, VARIANT* array);//创建含SAFEARRAY的VARIANT变量(数组大小，数组元素类型，输入数组，输出VARIANT变量)
 		double ReadDoubleFromString(std::string textstr);//读取字符串中的小数，如6.3
 		wchar_t* multi_Byte_To_Wide_Char(const std::string& pKey);
+		std::string string_To_UTF8(const std::string& str);
 		
 		void ReadAnnotationData(swDimXpertAnnotationType_e annoType,double* toleranceSize, int* toleranceLevel,std::string* myDatumName, std::vector<std::string>& datumNames,swDimXpertMaterialConditionModifier_e* MCMType, double* dimSize);//读取标注数据
 		void DatumData(std::string* myDatumName);//读取基准信息
@@ -170,23 +184,38 @@ namespace MyApp {
 		void DimTolData(swDimXpertAnnotationType_e annoType, double* toleranceSize, int* toleranceLevel, double* dimSize);//读取尺寸公差数据
 
 		void GetFiles(std::string path, std::vector<std::string>& files);//读取当前目录下所有CAD文件名
+		std::string GetFilesFromExplorer();
+		bool CopyFileToCADPath();
 	
 	public:
 		void ShowMyApp();
 		inline std::unordered_map<std::string, MyFaceFeature>& GetFaceMap() { return FaceMap; };//获取面哈希表的引用
 		inline std::map<SWState, MyState>& GetSWStateMap() { return SWStateMap; };//获取SW交互状态的引用
-		inline std::string GetExportPath() { return CADPath + CADName + "\\"; };//获取保存模型时的路径
-		inline std::string GetPictureExportPath(bool isMBDView) { return isMBDView? "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset\\photos\\" : "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewDataset_noMBD\\photos\\"; };//获取保存模型时的路径
-		inline std::string GetModelPictureExportPath() { return "C:\\Users\\PLY\\Desktop\\Files\\Projects\\Pycharm Projects\\MBDViewFeature\\MBDViewModelPicture\\"; };//获取保存模型时的路径
-		inline std::string GetCADName() { return CADName; };//获取保存模型时的路径
+		inline std::string GetExportPath() { return CADTempPath + GetCADNameUtf8() + "\\"; };//获取保存模型时的路径
+		inline std::string GetPictureExportPath(bool isMBDView) { return isMBDView? PictureExportPathForMBD : PictureExportPathFornoMBD; };//获取保存模型时的路径
+		inline std::string GetModelPictureExportPath() { return ModelPictureExportPath; };//获取保存模型时的路径
+		inline std::string GetCADName() { return CADName; };//获取保存模型时的名称
+		inline std::string GetCADNameUtf8() { return string_To_UTF8(CADName); };//获取保存模型时的名称
+		inline std::string GetCADPath() { return CADPath; };//获取保存模型时的路径
+		inline std::string GetCADTempPath() { return CADTempPath; };//获取保存模型时的路径
+		inline std::string GetPythonHome() { return PythonHome; };//获取python库的路径
+		inline std::string GetPythonProjectPath() { return PythonProjectPath; };//获取python项目的路径
 		inline glm::vec3 GetMassCenter() { return MassCenter; };//获取质心(毫米)
 		inline glm::vec3 GetMinBoxVertex() { return MinBoxVertex; };//获取包围盒
 		inline glm::vec3 GetMaxBoxVertex() { return MaxBoxVertex; };//获取包围盒
+
 		inline bool ShouldAutomatization() { return toAutomatization; }//确定要自动化
 		inline void StopAutomatization() { toAutomatization = false; }//停止自动化
 		//inline bool ShouldShowMBD() { return toShowMBD; }//确定要考虑MBD语义
 		inline bool ShouldLoadThumbnail() { return toShowThumbnail; }//确定要加载略缩图
 		inline void StopLoadThumbnail() { toShowThumbnail = false; }//停止加载略缩图
+		inline void SetCADPath(std::string path) { CADPath = path; };//获取保存模型时的路径
+		inline void SetCADTempPath(std::string path) { CADTempPath = path; };//获取保存模型时的路径
+		inline void SetPictureExportPathForMBD(std::string path) {PictureExportPathForMBD = path;}
+		inline void SetPictureExportPathFornoMBD(std::string path) { PictureExportPathFornoMBD = path; }
+		inline void SetModelPictureExportPath(std::string path) { ModelPictureExportPath = path; }
+		inline void SetPythonHome(std::string path) { PythonHome = path; }
+		inline void SetPythonProjectPath(std::string path) { PythonProjectPath = path; }
 
 		
 		std::string GetNextToOpenFileName();//获取打开模型时的路径
@@ -199,6 +228,8 @@ namespace MyApp {
 		bool StartReadMassProperty();//获取质量属性
 		bool StartReadMBD();//读取MBD特征及其标注
 		bool StartLoadModel();//加载模型
+
+		void StartOpenFileFromButton(std::string inputName);//由按钮打开文件
 
 		long allTime = 0;//MBD读取总耗时
 		long feTime = 0;//特征读取循环耗时（包含标注、面耗时）

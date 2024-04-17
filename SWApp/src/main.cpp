@@ -27,6 +27,8 @@
 
 #include <Python.h>//Python API
 
+#include "Config.h"
+
 PyObject* pModule_predict = nullptr;
 PyObject* pFunc_predict = nullptr; 
 PyObject* pModule_build_dataset = nullptr;
@@ -122,9 +124,39 @@ std::vector<std::shared_ptr<Texture>> ResultThumbnail(5);
 bool toRetrivalWithMBD = true;
 
 std::vector<std::shared_ptr<Texture>> MBDViewDatasetTextures(VIEWCOUNT);
+std::vector<std::shared_ptr<Texture>> ResultMBDViewDatasetTextures(VIEWCOUNT*5);
 
 //数据库模型总数
 int datasetModelCount = 0;
+
+
+std::string string_To_UTF8(const std::string& str)
+{
+	int nwLen = ::MultiByteToWideChar(CP_ACP, 0, str.c_str(), -1, NULL, 0);
+
+	wchar_t* pwBuf = new wchar_t[nwLen + 1];//一定要加1，不然会出现尾巴
+	ZeroMemory(pwBuf, nwLen * 2 + 2);
+
+	::MultiByteToWideChar(CP_ACP, 0, str.c_str(), str.length(), pwBuf, nwLen);
+
+	int nLen = ::WideCharToMultiByte(CP_UTF8, 0, pwBuf, -1, NULL, NULL, NULL, NULL);
+
+	char* pBuf = new char[nLen + 1];
+	ZeroMemory(pBuf, nLen + 1);
+
+	::WideCharToMultiByte(CP_UTF8, 0, pwBuf, nwLen, pBuf, nLen, NULL, NULL);
+
+	std::string retStr(pBuf);
+
+	delete[]pwBuf;
+	delete[]pBuf;
+
+	pwBuf = NULL;
+	pBuf = NULL;
+
+	return retStr;
+}
+
 
 #define WIDTHBYTES(bits) (((bits)+31)/32*4)//用于使图像宽度所占字节数为4byte的倍数
 bool PictureResize(unsigned char* pColorDataMid, unsigned char* pColorData, int targetWidth, int targetHeight, int width,int height) {
@@ -485,13 +517,7 @@ PyObject* pythonImportModule(const char* pyDir, const char* name) {
 	char tempPath[256] = {};
 	sprintf(tempPath, "sys.path.append('%s')", pyDir);
 	PyRun_SimpleString("import sys");
-	//PyRun_SimpleString("sys.path.append('./')");
 	PyRun_SimpleString(tempPath);
-	//PyRun_SimpleString("import matplotlib.pyplot");
-	//PyRun_SimpleString("matplotlib.pyplot.path.append('C:/Users/PLY/anaconda3/envs/DeepLearning/Lib')");
-	//PyRun_SimpleString("sys.path.append('C:/Users/PLY/anaconda3/envs/DeepLearning/Lib/site-packages')");
-	//PyRun_SimpleString("sys.path.append('C:/Users/PLY/anaconda3/envs/DeepLearning/DLLs')");
-	//PyRun_SimpleString("sys.path.append('C:/Users/PLY/anaconda3/envs/DeepLearning')");
 	
 
 	// import ${name}
@@ -552,7 +578,10 @@ int callPythonFun(PyObject* module) {
 
 bool InitialPython() {
 	//python 初始化
-	Py_SetPythonHome(L"C:/Users/PLY/anaconda3/envs/torchgpu");
+	std::string str = App.GetPythonHome();
+	wchar_t*  wc = new wchar_t[str.size()];
+	swprintf(wc, 100, L"%S", str.c_str()); //注意大写
+	Py_SetPythonHome(wc);
 	Py_Initialize();
 	if (!Py_IsInitialized())
 	{
@@ -560,9 +589,9 @@ bool InitialPython() {
 	}
 	else
 	{
-		pModule_predict = pythonImportModule("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature","predict_c++");
-		pModule_build_dataset = pythonImportModule("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature","build_dataset_c++");
-		//pModule = pythonImportModule("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature","gg");
+		pModule_predict = pythonImportModule(App.GetPythonProjectPath().c_str(),"predict_c++");
+		pModule_build_dataset = pythonImportModule(App.GetPythonProjectPath().c_str(),"build_dataset_c++");
+		//pModule_predict = pythonImportModule(App.GetPythonProjectPath().c_str(),"gg");
 		if (pModule_predict == NULL || pModule_build_dataset == NULL) {
 			return false;
 		}
@@ -573,10 +602,49 @@ bool InitialPython() {
 	}
 }
 
+bool LoadFileInDatasetForResult(std::string path, std::string CADName, int index)
+{
+	bool result = false;
+	int viewCount = index*VIEWCOUNT;
+	//std::vector <std::string> fileNames;
+	//文件句柄
+	intptr_t hFile = 0;
+	//文件信息
+	struct _finddata_t fileinfo;
+	std::string p;
+	if ((hFile = _findfirst(p.assign(path).append("*").c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+			//如果不是目录或者隐藏文件
+			if (!(fileinfo.attrib & _A_SUBDIR || fileinfo.attrib & _A_HIDDEN))
+			{
+				std::string textstr = fileinfo.name;
+				std::regex pattern(CADName + "_");	//只保留文件名，不保留后缀
+				std::string::const_iterator iter_begin = textstr.cbegin();
+				std::string::const_iterator iter_end = textstr.cend();
+				std::smatch matchResult;
+				if (std::regex_search(iter_begin, iter_end, matchResult, pattern)) {
+					ResultMBDViewDatasetTextures[viewCount].reset(new Texture(path + textstr));
+					viewCount++;
+					//fileNames.push_back(matchResult.prefix());	
+
+				}
+
+			}
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+	}
+	if (viewCount == VIEWCOUNT * 5) {
+		result = true;
+	}
+	return result;
+}
+
 bool ReadResults() {
 	ResultCADNameList.clear();
 	ResultSimList.clear();
-	std::ifstream source("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature/Results/FileNameList.json");
+	std::ifstream source(App.GetPythonProjectPath() + "/Results/FileNameList.json");
 	std::string line;
 	while (getline(source, line)) {
 		if (line == "[" || line == "]") {
@@ -592,7 +660,7 @@ bool ReadResults() {
 		}
 	}
 
-	std::ifstream source1("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature/Results/SimList.json");
+	std::ifstream source1(App.GetPythonProjectPath() + "/Results/SimList.json");
 	std::string line1;
 	while (getline(source1, line1))
 	{
@@ -618,7 +686,8 @@ bool ReadResults() {
 	if (ResultCADNameList.size() > 0) {
 		for (int i = 0; i < ResultCADNameList.size(); i++)
 		{
-			ResultThumbnail[i].reset(new Texture("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature/MBDViewModelPicture/" + ResultCADNameList[i] + "_.bmp"));
+			ResultThumbnail[i].reset(new Texture(App.GetModelPictureExportPath() + ResultCADNameList[i] + "_.bmp"));
+			LoadFileInDatasetForResult(App.GetPictureExportPath(true), ResultCADNameList[i], i);
 		}
 		return true;
 	}	
@@ -655,7 +724,7 @@ int GetModelCountInDataset(std::string path)
 bool Retrival() {
 	int result = 0;
 	if (datasetModelCount == GetModelCountInDataset(App.GetPictureExportPath(true))/VIEWCOUNT) {
-		result = callPythonFun_s_i_i(pModule_predict, App.GetCADName().c_str(), (int)toRetrivalWithMBD, datasetModelCount);
+		result = callPythonFun_s_i_i(pModule_predict, App.GetCADNameUtf8().c_str(), (int)toRetrivalWithMBD, datasetModelCount);
 	}
 	else {
 		return false;
@@ -674,9 +743,9 @@ int BuildDataset() {
 	return result;
 }
 
-std::string SaveThumbnail() {
+std::string SaveThumbnail(std::string path) {
 	CString modelPicturePath;
-	std::string modelPicturePathStr = App.GetModelPictureExportPath() + App.GetCADName() + "_.bmp";
+	std::string modelPicturePathStr = path + App.GetCADName() + "_.bmp";
 	modelPicturePath = CA2T(modelPicturePathStr.c_str());
 	if (App.SaveBitmapToFile(App.GetThumbnailEx(), modelPicturePath))
 		return modelPicturePathStr;
@@ -723,19 +792,79 @@ bool LoadFileInDataset(std::string path,std::string CADName)
 	return result;
 }
 
-void LoadAllData(std::unordered_map<std::string, Model>& modelMap, std::unordered_map<std::string, InstanceBuffer>& instanceMap, std::vector<Model>& convexHullModelList, std::vector<InstanceBuffer>& convexHullInstanceList) {
+
+bool LoadAllData(std::unordered_map<std::string, Model>& modelMap, std::unordered_map<std::string, InstanceBuffer>& instanceMap, std::vector<Model>& convexHullModelList, std::vector<InstanceBuffer>& convexHullInstanceList) {
+	bool result = false;
 	//2.读取属性
-	App.StartReadProperty();
+	result = App.StartReadProperty();
+	if (!result)
+		return false;
 	//3.加载质量
-	App.StartReadMassProperty();
+	result = App.StartReadMassProperty();
+	if (!result)
+		return false;
 	//4.读取MBD特征及其标注
-	App.StartReadMBD();
+	result = App.StartReadMBD();
+	if (!result)
+		return false;
 	faceMap = App.GetFaceMap();
 	//5.加载模型
 	App.StartLoadModel();
+	if (!result)
+		return false;
 	LoadModel(modelMap, instanceMap);
 	LoadConvexHullModel(convexHullModelList, convexHullInstanceList, convexHull, App.GetMinBoxVertex(), App.GetMaxBoxVertex());
+	return true;
 }
+
+void ReadPathSetting() {
+	// 打开一个写文件流指向 config.ini 文件
+	std::string strConfigFileName("config.ini");
+	Config config(strConfigFileName);
+	if (config.FileExist("config.ini"))
+	{
+		// 读取键值
+		std::string strValue;
+		if(config.KeyExists("CADPath")) 
+		{
+			strValue = config.Read<std::string>("CADPath");
+			App.SetCADPath(strValue);
+		}
+		if (config.KeyExists("CADTempPath"))
+		{
+			strValue = config.Read<std::string>("CADTempPath");
+			App.SetCADTempPath(strValue);
+		}
+		if (config.KeyExists("PictureExportPathForMBD"))
+		{
+			strValue = config.Read<std::string>("PictureExportPathForMBD");
+			App.SetPictureExportPathForMBD(strValue);
+		}
+		if (config.KeyExists("PictureExportPathFornoMBD"))
+		{
+			strValue = config.Read<std::string>("PictureExportPathFornoMBD");
+			App.SetPictureExportPathFornoMBD(strValue);
+		}
+		if (config.KeyExists("ModelPictureExportPath"))
+		{
+			strValue = config.Read<std::string>("ModelPictureExportPath");
+			App.SetModelPictureExportPath(strValue);
+		}
+		if (config.KeyExists("PythonHome"))
+		{
+			strValue = config.Read<std::string>("PythonHome");
+			App.SetPythonHome(strValue);
+		}
+		if (config.KeyExists("PythonProjectPath"))
+		{
+			strValue = config.Read<std::string>("PythonProjectPath");
+			App.SetPythonProjectPath(strValue);
+		}
+	}
+}
+
+
+
 
 // Main code
 #ifdef DEBUG
@@ -761,6 +890,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     }       
     glfwMakeContextCurrent(window);
     glfwSwapInterval(0); //1=开启垂直同步
+
+	//LONG_PTR exst = ::GetWindowLongPtr(Handle, GWL_EXSTYLE);
+	//::SetWindowLongPtr(Handle, GWL_EXSTYLE, exst | WS_EX_ACCEPTFILES);
 
     //glew初始化
 	if (glewInit())
@@ -790,6 +922,72 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
+	ImVec4* colors = ImGui::GetStyle().Colors;
+	colors[ImGuiCol_Text] = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
+	colors[ImGuiCol_TextDisabled] = ImVec4(0.60f, 0.60f, 0.60f, 1.00f);
+	colors[ImGuiCol_WindowBg] = ImVec4(0.95f, 0.95f, 0.97f, 1.00f);
+	colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	colors[ImGuiCol_PopupBg] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+	colors[ImGuiCol_Border] = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
+	colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	colors[ImGuiCol_FrameBg] = ImVec4(0.73f, 0.73f, 0.71f, 0.39f);
+	colors[ImGuiCol_FrameBgHovered] = ImVec4(0.20f, 0.78f, 0.35f, 0.59f);
+	colors[ImGuiCol_FrameBgActive] = ImVec4(0.20f, 0.78f, 0.35f, 1.00f);
+	colors[ImGuiCol_TitleBg] = ImVec4(0.98f, 0.98f, 0.99f, 1.00f);
+	colors[ImGuiCol_TitleBgActive] = ImVec4(0.98f, 0.98f, 0.99f, 1.00f);
+	colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.95f, 0.95f, 0.97f, 1.00f);
+	colors[ImGuiCol_MenuBarBg] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
+	colors[ImGuiCol_ScrollbarBg] = ImVec4(0.95f, 0.95f, 0.97f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.73f, 0.73f, 0.75f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.73f, 0.73f, 0.75f, 1.00f);
+	colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.73f, 0.73f, 0.75f, 1.00f);
+	colors[ImGuiCol_CheckMark] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
+	colors[ImGuiCol_SliderGrab] = ImVec4(1.00f, 1.00f, 1.00f, 0.78f);
+	colors[ImGuiCol_SliderGrabActive] = ImVec4(0.46f, 0.54f, 0.80f, 0.60f);
+	colors[ImGuiCol_Button] = ImVec4(0.73f, 0.73f, 0.71f, 0.39f);
+	colors[ImGuiCol_ButtonHovered] = ImVec4(0.54f, 0.76f, 1.00f, 1.00f);
+	colors[ImGuiCol_ButtonActive] = ImVec4(0.41f, 0.71f, 1.00f, 1.00f);
+	colors[ImGuiCol_Header] = ImVec4(0.73f, 0.73f, 0.75f, 0.31f);
+	colors[ImGuiCol_HeaderHovered] = ImVec4(0.73f, 0.73f, 0.75f, 0.59f);
+	colors[ImGuiCol_HeaderActive] = ImVec4(0.73f, 0.73f, 0.75f, 1.00f);
+	colors[ImGuiCol_Separator] = ImVec4(0.66f, 0.66f, 0.68f, 1.00f);
+	colors[ImGuiCol_SeparatorHovered] = ImVec4(0.14f, 0.44f, 0.80f, 0.78f);
+	colors[ImGuiCol_SeparatorActive] = ImVec4(0.14f, 0.44f, 0.80f, 1.00f);
+	colors[ImGuiCol_ResizeGrip] = ImVec4(0.35f, 0.35f, 0.35f, 0.17f);
+	colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.26f, 0.59f, 0.98f, 0.67f);
+	colors[ImGuiCol_ResizeGripActive] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+	colors[ImGuiCol_Tab] = ImVec4(0.88f, 0.88f, 0.90f, 1.00f);
+	colors[ImGuiCol_TabHovered] = ImVec4(0.95f, 0.95f, 0.97f, 1.00f);
+	colors[ImGuiCol_TabActive] = ImVec4(0.95f, 0.95f, 0.97f, 1.00f);
+	colors[ImGuiCol_TabUnfocused] = ImVec4(0.88f, 0.88f, 0.90f, 1.00f);
+	colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.95f, 0.95f, 0.97f, 1.00f);
+	colors[ImGuiCol_DockingPreview] = ImVec4(0.26f, 0.59f, 0.98f, 0.22f);
+	colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
+	colors[ImGuiCol_PlotLines] = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
+	colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
+	colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+	colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.45f, 0.00f, 1.00f);
+	colors[ImGuiCol_TableHeaderBg] = ImVec4(0.78f, 0.87f, 0.98f, 1.00f);
+	colors[ImGuiCol_TableBorderStrong] = ImVec4(0.57f, 0.57f, 0.64f, 1.00f);
+	colors[ImGuiCol_TableBorderLight] = ImVec4(0.68f, 0.68f, 0.74f, 1.00f);
+	colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+	colors[ImGuiCol_TableRowBgAlt] = ImVec4(0.30f, 0.30f, 0.30f, 0.09f);
+	colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
+	colors[ImGuiCol_DragDropTarget] = ImVec4(0.26f, 0.59f, 0.98f, 0.95f);
+	colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 0.80f);
+	colors[ImGuiCol_NavWindowingHighlight] = ImVec4(0.70f, 0.70f, 0.70f, 0.70f);
+	colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.20f);
+	colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.20f, 0.20f, 0.20f, 0.35f);
+
+	style.FrameRounding = 5.0f;
+	style.FrameBorderSize = 1.0f;
+	style.WindowRounding = 5.0f;
+	style.PopupRounding = 5.0f;
+	style.FramePadding = ImVec2(6.0f, 6.0f);
+	style.WindowMenuButtonPosition = 1;
+
+	//读取config文件
+	ReadPathSetting();
 	//初始化python
 	InitialPython();
 
@@ -838,6 +1036,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	std::shared_ptr<Texture> thumbnail;
 	std::vector<std::shared_ptr<Texture>> MBDViews;
 
+	bool shouldAutomatizationForOneModel = false;
+
 	//渲染方面的API
 	Renderer renderer;
 
@@ -873,16 +1073,25 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			toShowConvexHull = false;
 			std::string name = App.GetNextToOpenFileName();
             if (name != "") {
+				bool result = false;
 				//1.打开文件
-				App.StartOpenFile(name);
+				result = App.StartOpenFile(name);
 				//2.加载全部数据
-				LoadAllData(modelMap, instanceMap, convexHullModelList, convexHullInstanceList);
+				if(result)
+					result = LoadAllData(modelMap, instanceMap, convexHullModelList, convexHullInstanceList);
 				//3.准许拍照
-				toTakePictures = true;
-                pictureIndex = 0;
-				lastFileFinished = false;
-                //4.保存略缩图
-				SaveThumbnail();
+				if(result) {
+					toTakePictures = true;
+					pictureIndex = 0;
+					lastFileFinished = false;
+					//4.保存略缩图
+					SaveThumbnail(App.GetModelPictureExportPath());
+				}
+				if (!result) {
+					toTakePictures = false;
+					isMBDView = true;
+					lastFileFinished = true;//换下一CAD文件
+				}
             }
             else {
                 App.StopAutomatization();//如果文件读取完毕就停止自动化
@@ -890,6 +1099,32 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
             }
             
         }
+		if (shouldAutomatizationForOneModel&&lastFileFinished) {
+			bool result = false;
+			if (swStateMap[MyApp::SWState::ModelLoaded] != MyApp::MyState::Succeed) {
+				//1.加载全部数据
+				result = LoadAllData(modelMap, instanceMap, convexHullModelList, convexHullInstanceList);
+			}
+			else
+			{
+				result = true;
+			}
+			if(result)
+			{
+				//2.拍照
+				toTakePictures = true;
+				pictureIndex = 0;
+				lastFileFinished = false;
+				//3.保存略缩图
+				SaveThumbnail(App.GetModelPictureExportPath());
+			}
+			else {
+				toTakePictures = false;
+				isMBDView = true;
+				lastFileFinished = true;
+				shouldAutomatizationForOneModel = false;				
+			}
+		}
 
 		//设定拍照模式
 		if (toTakePictures) {
@@ -911,8 +1146,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				toTakePictures = false;
 				isMBDView = true;
 				lastFileFinished = true;//18张截图拍完后说明要换下一CAD文件
-				if (!App.ShouldAutomatization()) {
+				hasMBDViewDataset = LoadFileInDataset(App.GetPictureExportPath(true), App.GetCADName());
+				if (shouldAutomatizationForOneModel) {
 					datasetModelCount = BuildDataset();//运行BuildDataset.py
+					shouldAutomatizationForOneModel = false;
 				}
 			}
 		}
@@ -1072,7 +1309,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		ImGui::Begin("三维检索");
 		//加载略缩图
 		if (App.ShouldLoadThumbnail()) {
-			std::string modelPicturePathStr = SaveThumbnail();
+			std::string modelPicturePathStr = SaveThumbnail(App.GetCADTempPath());
 			thumbnail.reset(new Texture(modelPicturePathStr));
 			hasMBDViewDataset = LoadFileInDataset(App.GetPictureExportPath(true), App.GetCADName());
 			App.StopLoadThumbnail();
@@ -1080,19 +1317,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		if (thumbnail) {			
 			ImGui::Text("【检索目标】");
 			ImGui::SameLine();
-			ImGui::Text(App.GetCADName().c_str());
+			ImGui::Text(App.GetCADNameUtf8().c_str());
 			ImGui::SameLine();		
 			if (ImGui::Button("加入模型特征库")) {
-				if (swStateMap[MyApp::SWState::ModelLoaded] != MyApp::MyState::Succeed) {
-					//加载全部数据
-					LoadAllData(modelMap, instanceMap, convexHullModelList, convexHullInstanceList);
-
-				}
-				//拍照
-				toTakePictures = true;
-				pictureIndex = 0;
-				lastFileFinished = false;
-				hasMBDViewDataset = LoadFileInDataset(App.GetPictureExportPath(true), App.GetCADName());
+				shouldAutomatizationForOneModel = true;
 			}
 			ImGui::SameLine();
 			if (hasMBDViewDataset) {
@@ -1101,7 +1329,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			else {
 				ImGui::Text("未加入");
 			}
-			ImGui::Image((GLuint*)thumbnail->GetID(), ImVec2(thumbnail->GetWidth() / 20.0f, thumbnail->GetHeight() / 20.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+			ImGui::Image((GLuint*)thumbnail->GetID(), ImVec2(thumbnail->GetWidth() / 20.0f, thumbnail->GetHeight() / 20.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
 			if(hasMBDViewDataset)
 			{
 				ImGui::SameLine();
@@ -1127,12 +1355,27 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				ImGui::Separator();
 				for (int i = 0; i < ResultCADNameList.size(); i++) {
 					std::string title = "【检索结果 " + std::to_string(i + 1) + "】";
-					ImGui::Text(title.c_str());
+					if (ImGui::Button(title.c_str())) {
+						App.StartOpenFileFromButton(ResultCADNameList[i]);
+					}
+					//ImGui::Text(title.c_str());
 					ImGui::SameLine();
-					ImGui::Text(ResultCADNameList[i].c_str());
+					ImGui::Text(string_To_UTF8(ResultCADNameList[i]).c_str());
 					ImGui::SameLine();
 					ImGui::Text("相似度:%.2f％", ResultSimList[i] * 100.0f);
-					ImGui::Image((GLuint*)ResultThumbnail[i]->GetID(), ImVec2(ResultThumbnail[i]->GetWidth() / 30.0f, ResultThumbnail[i]->GetHeight() / 30.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 1.0f));
+					ImGui::Image((GLuint*)ResultThumbnail[i]->GetID(), ImVec2(ResultThumbnail[i]->GetWidth() / 20.0f, ResultThumbnail[i]->GetHeight() / 20.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.5f));				
+					ImGui::SameLine();
+					ImGui::BeginGroup();
+					ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
+					for (int j = 0; j < VIEWCOUNT; j++) {
+						ImGui::Image((GLuint*)ResultMBDViewDatasetTextures[j+i*VIEWCOUNT]->GetID(), ImVec2(thumbnail->GetHeight() / 60.0f, thumbnail->GetHeight() / 60.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+						if ((j + 1) % (VIEWCOUNT / 3) == 0) {
+							continue;
+						}
+						ImGui::SameLine();
+					}
+					ImGui::PopStyleVar();
+					ImGui::EndGroup();
 					ImGui::Separator();
 				}
 			}
@@ -1175,6 +1418,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     }
 
     //销毁
+	Py_Finalize;
+
+	if (swStateMap[MyApp::SWState::Connected] == MyApp::MyState::Succeed) {
+		CoUninitialize();
+	}
+
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

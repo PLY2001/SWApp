@@ -179,7 +179,7 @@ def main(inputName,hasMBD,modelCount):
     if (os.path.isfile("./Results/SimList.json")):
         os.remove("./Results/SimList.json")
 
-    json_str = json.dumps(FileNameList, indent=0)
+    json_str = json.dumps(FileNameList, indent=0, ensure_ascii=False)
     with open('./Results/FileNameList.json', 'a') as json_file:
         json_file.write(json_str)
     json_str = json.dumps(SimList, indent=0)

@@ -19,7 +19,7 @@ import re
 def main():
     hasMBD = input("是否考虑MBD？ y/n:")
     dataset = "MBDViewDataset" if hasMBD == "y" else "MBDViewDataset_noMBD"
-    modelCount = 8
+    modelCount = 10
     viewCount = 24
     featureSize = 128
     picturesType = []
@@ -171,17 +171,17 @@ def main():
         FileNameList.append(fileList[thisindex])
         SimList.append(sim_order[i][1].tolist())
 
-    # if (os.path.isfile("./Results/FileNameList.json")):
-    #     os.remove("./Results/FileNameList.json")
-    # if (os.path.isfile("./Results/SimList.json")):
-    #     os.remove("./Results/SimList.json")
-    #
-    # json_str = json.dumps(FileNameList, indent=0)
-    # with open('./Results/FileNameList.json', 'a') as json_file:
-    #     json_file.write(json_str)
-    # json_str = json.dumps(SimList, indent=0)
-    # with open('./Results/SimList.json', 'a') as json_file:
-    #     json_file.write(json_str)
+    if (os.path.isfile("./Results/FileNameList.json")):
+        os.remove("./Results/FileNameList.json")
+    if (os.path.isfile("./Results/SimList.json")):
+        os.remove("./Results/SimList.json")
+
+    json_str = json.dumps(FileNameList, indent=0, ensure_ascii=False)
+    with open('./Results/FileNameList.json', 'a') as json_file:
+        json_file.write(json_str)
+    json_str = json.dumps(SimList, indent=0)
+    with open('./Results/SimList.json', 'a') as json_file:
+        json_file.write(json_str)
 
     plt.subplots_adjust(left=None, bottom=None, right=None, top=0.75, wspace=0.5, hspace=1.0)
     plt.rcParams['font.sans-serif'] = ['SimHei']
