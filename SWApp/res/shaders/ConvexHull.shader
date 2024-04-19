@@ -59,5 +59,5 @@ in VS_OUT{
 
 void main() 
 {
-	color =vec4(1.0f,0.0f,0.0f,1.0f);//*(1.0f-shadowColor) //texColor;//u_color;//vec4(0.2,0.7,0.3,1.0); 
+	color =vec4(1.0f,0.0f,0.0f,0.6f);//*(1.0f-shadowColor) //texColor;//u_color;//vec4(0.2,0.7,0.3,1.0); 
 }

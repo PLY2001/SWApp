@@ -61,7 +61,7 @@ in VS_OUT{
 
 void main() 
 {
-    vec3 worldLight = normalize(vec3(1.0f,1.0f,1.0f)); //获取光源位置
+    vec3 worldLight = normalize(vec3(1.0f,1.4f,1.2f)); //获取光源位置
 	vec3 lightColor = vec3(1.0f);
 	vec3 diffuseColor = vec3(0.9f);
     vec3 diffuse = lightColor * diffuseColor * max(0, dot(worldLight, normalize(fs_in.v_WorldNormal.xyz))); // 计算漫反射

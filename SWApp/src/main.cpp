@@ -468,7 +468,7 @@ void LoadModel(std::unordered_map<std::string, Model>& modelMap, std::unordered_
 	modelMap.clear();
 	for (auto face : faceMap) {
 		std::string fileName = face.first + ".STL";
-		std::string filePath = App.GetExportPath();
+		std::string filePath = App.GetExportPathUtf8();
 		Model model((filePath + fileName));//读取文件
 		modelMap[face.first] = model;
 
@@ -1354,7 +1354,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			if (retrivalSucessful) {
 				ImGui::Separator();
 				for (int i = 0; i < ResultCADNameList.size(); i++) {
-					std::string title = "【检索结果 " + std::to_string(i + 1) + "】";
+					std::string title = "检索结果 " + std::to_string(i + 1) ;
 					if (ImGui::Button(title.c_str())) {
 						App.StartOpenFileFromButton(ResultCADNameList[i]);
 					}

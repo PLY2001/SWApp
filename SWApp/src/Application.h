@@ -191,7 +191,8 @@ namespace MyApp {
 		void ShowMyApp();
 		inline std::unordered_map<std::string, MyFaceFeature>& GetFaceMap() { return FaceMap; };//获取面哈希表的引用
 		inline std::map<SWState, MyState>& GetSWStateMap() { return SWStateMap; };//获取SW交互状态的引用
-		inline std::string GetExportPath() { return CADTempPath + GetCADNameUtf8() + "\\"; };//获取保存模型时的路径
+		inline std::string GetExportPathUtf8() { return CADTempPath + GetCADNameUtf8() + "\\"; };//获取保存模型时的路径
+		inline std::string GetExportPath() { return CADTempPath + CADName + "\\"; };//获取保存模型时的路径
 		inline std::string GetPictureExportPath(bool isMBDView) { return isMBDView? PictureExportPathForMBD : PictureExportPathFornoMBD; };//获取保存模型时的路径
 		inline std::string GetModelPictureExportPath() { return ModelPictureExportPath; };//获取保存模型时的路径
 		inline std::string GetCADName() { return CADName; };//获取保存模型时的名称
