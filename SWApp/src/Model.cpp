@@ -318,6 +318,11 @@ void Model::SetModelMatrixScale(glm::vec3 Scale)
 	mModelMatrix = glm::scale(mModelMatrix, Scale);
 }
 
+void Model::SetModelMatrix(glm::mat4 matrix)
+{
+	mModelMatrix = matrix;
+}
+
 float Model::GetNormalizeScale(glm::vec3 MassCenter)
 {
 	float maxDis = 0;
@@ -386,6 +391,26 @@ BoxVertex Model::GetBoxVertex()
 	}
 	result.MinVertex = minBoxVertex;
 	result.MaxVertex = maxBoxVertex;
+	return result;
+}
+
+std::vector<glm::vec3> Model::GetVertexList()
+{
+	std::vector<glm::vec3> result;
+	std::map<VertexKey, int> vlist;
+	for (auto mesh : meshes) {
+		for (auto vertex : mesh.vertices) {
+			VertexKey vk;
+			vk.v = vertex.Position;
+			if (vlist.count(vk) > 0) {
+				continue;
+			}
+			else {
+				vlist[vk] = 1;
+			}
+			result.push_back(vertex.Position);
+		}
+	}
 	return result;
 }
 

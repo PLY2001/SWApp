@@ -70,12 +70,15 @@ public:
 	void DrawInstanced(Shader& shader, int amount);
 	std::vector<Mesh> meshes;
 	inline glm::mat4& GetModelMatrix() { return mModelMatrix; };
+	inline glm::mat4& GetDefaultModelMatrix() { return defaultModelMatrix; };
 	inline void SetDefaultModelMatrix() { defaultModelMatrix = mModelMatrix; };
 	void ResetToDefaultModelMatrix(float t);
 	void SetModelMatrixPosition(glm::vec3 Pos);
 	void SetModelMatrixRotation(float Radians, glm::vec3 Axis);
 	void SetModelMatrixScale(glm::vec3 Scale);
+	void SetModelMatrix(glm::mat4 matrix);
 	float GetNormalizeScale(glm::vec3 MassCenter);
 	BorderVertexList GetBorderVertexList(glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex, glm::vec3 MassCenter);
 	BoxVertex GetBoxVertex();
+	std::vector<glm::vec3> GetVertexList();
 };

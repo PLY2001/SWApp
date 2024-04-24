@@ -51,10 +51,6 @@ out vec4 color;
 uniform Material material;
 uniform vec3 MBDColor;
 uniform int viewType;
-uniform sampler2D depth_R_map;
-uniform float WinWidth;
-uniform float WinHeight;
-
 
 in VS_OUT{
 	vec2 v_texcoord;//从顶点着色器传入的变量
@@ -65,14 +61,6 @@ in VS_OUT{
 
 void main() 
 {
-    vec3 worldLight = normalize(vec3(1.0f,1.4f,1.2f)); //获取光源位置
-	vec3 lightColor = vec3(1.0f);
-	vec3 diffuseColor = vec3(0.9f);
-    vec3 diffuse = lightColor * diffuseColor * max(0, dot(worldLight, normalize(fs_in.v_WorldNormal.xyz))); // 计算漫反射
 	float depth = float(gl_FragCoord.z);
-	vec2 uv = vec2(gl_FragCoord.x/WinWidth, gl_FragCoord.y/WinHeight);
-	float depth_R = texture(depth_R_map,uv).r;
-	vec3 finalColor = viewType > 0 ? MBDColor : vec3(1.0f - (depth_R - depth));
-	finalColor = viewType > 2 ? diffuse : finalColor;
-	color =vec4(finalColor,1.0f);//*(1.0f-shadowColor) //texColor;//u_color;//vec4(0.2,0.7,0.3,1.0); 
+	color =vec4(depth,depth,depth,1.0f);//*(1.0f-shadowColor) //texColor;//u_color;//vec4(0.2,0.7,0.3,1.0); 
 }

@@ -14,7 +14,7 @@ from model import resnet34,Loss_mv_ms
 def main():
     os.chdir("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature")
     dataset1_num = 0
-    viewCount = 24
+    viewCount = 18
     for i in range(2):
         hasMBD = i
         dataset = "MBDViewDataset" if hasMBD == 0 else "MBDViewDataset_noMBD"
