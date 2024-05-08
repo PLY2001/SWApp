@@ -663,7 +663,7 @@ namespace MyApp {
 		LPVOID feData = nullptr;//接收读取后的数组
 		LONG featureCount;//接收读取后的数组大小
 		bool hasMBDfeature = ReadSafeArray(&dimXpertFeatureVT, VT_DISPATCH, 1, &feData, &featureCount);
-		if (hasMBDfeature) {
+		if (hasMBDfeature && feData!=nullptr) {
 			IDispatch** myfeData = (IDispatch**)feData;//将数组指针赋与IDispatch**类型的指针数组的指针，与ReadSafeArray类型一致
 			IDimXpertFeature* myFeatureData;//用于最终获取IDimXpertFeature*类型数据						
 			CComBSTR dimXpertFeatureName;
@@ -1146,57 +1146,63 @@ namespace MyApp {
 	bool MyApplication::ReadNoMBDFace()
 	{
 		bool hasNoMBDFace = false;//记录该类面是否存在
+		if(FaceMap.size()>0)
+		{
+			CComPtr<IPartDoc> swPartDoc;//获取零件
+			swPartDoc = swDoc;
 
-		CComPtr<IPartDoc> swPartDoc;//获取零件
-		swPartDoc = swDoc;
-
-		swPartDoc->GetBodies2(swBodyType_e::swAllBodies, VARIANT_TRUE, &swBodyVT);//获取实体VT
-		LPVOID bData = nullptr;
-		LONG bCount;
-		if (!ReadSafeArray(&swBodyVT, VT_DISPATCH, 1, &bData, &bCount)) {
-			CoUninitialize();
-			return false;
-		}
-		IDispatch** mybData = (IDispatch**)bData;
-		IBody2* myBodyData;//用于获取IBody2*类型数据
-		long bStartTime = GetTickCount();
-		for (int bIndex = 0; bIndex < bCount; bIndex++) { //1294ms
-			result = mybData[bIndex]->QueryInterface(IID_IBody2, (void**)&myBodyData);
-			if (result != S_OK) {
+			swPartDoc->GetBodies2(swBodyType_e::swAllBodies, VARIANT_TRUE, &swBodyVT);//获取实体VT
+			LPVOID bData = nullptr;
+			LONG bCount;
+			if (!ReadSafeArray(&swBodyVT, VT_DISPATCH, 1, &bData, &bCount)) {
 				CoUninitialize();
 				return false;
 			}
-			swBody = CComPtr<IBody2>(myBodyData);//得到实体
-
-			//a.循环全部面
-			CComPtr<IFace2> thisFace;//面
-			CComPtr<IFace2> nextFace;//面
-			swBody->IGetFirstFace(&thisFace);
-
-			while (thisFace)
-			{
-				//b.选择无标注的面
-				swEntity = thisFace;
-				CComBSTR faceName;
-				result = swEntity->get_ModelName(&faceName);//查看面的模型名称
-				if (faceName == "") { //名称为空说明该面没有读取过特征标注
-					VARIANT_BOOL isSelected;
-					result = swEntity->Select4(VARIANT_TRUE, nullptr, &isSelected);
-					hasNoMBDFace = true;
+			IDispatch** mybData = (IDispatch**)bData;
+			IBody2* myBodyData;//用于获取IBody2*类型数据
+			long bStartTime = GetTickCount();
+			for (int bIndex = 0; bIndex < bCount; bIndex++) { //1294ms
+				result = mybData[bIndex]->QueryInterface(IID_IBody2, (void**)&myBodyData);
+				if (result != S_OK) {
+					CoUninitialize();
+					return false;
 				}
-				else {
-					VARIANT_BOOL isDeSelected;
-					result = swEntity->DeSelect(&isDeSelected);
+				swBody = CComPtr<IBody2>(myBodyData);//得到实体
+
+				//a.循环全部面
+				CComPtr<IFace2> thisFace;//面
+				CComPtr<IFace2> nextFace;//面
+				swBody->IGetFirstFace(&thisFace);
+
+				while (thisFace)
+				{
+					//b.选择无标注的面
+					swEntity = thisFace;
+					CComBSTR faceName;
+					result = swEntity->get_ModelName(&faceName);//查看面的模型名称
+					if (faceName == "") { //名称为空说明该面没有读取过特征标注
+						VARIANT_BOOL isSelected;
+						result = swEntity->Select4(VARIANT_TRUE, nullptr, &isSelected);
+						hasNoMBDFace = true;
+					}
+					else {
+						VARIANT_BOOL isDeSelected;
+						result = swEntity->DeSelect(&isDeSelected);
+					}
+					nextFace.Release();
+					result = thisFace->IGetNextFace(&nextFace);
+					thisFace = nextFace;
 				}
-				nextFace.Release();
-				result = thisFace->IGetNextFace(&nextFace);
-				thisFace = nextFace;
+
+
 			}
-
-
+			long bEndTime = GetTickCount();
+			bTime = bEndTime - bStartTime;
 		}
-		long bEndTime = GetTickCount();
-		bTime = bEndTime - bStartTime;
+		else {
+			hasNoMBDFace = true;
+		}
+
 		//c.保存无MBD的面
 		if (hasNoMBDFace) {
 			CComBSTR noMBDFaceName = "0_NoMBDFace";
@@ -1231,8 +1237,16 @@ namespace MyApp {
 	{
 		swDispatch.Release();
 		result = swDocE->CreateMassProperty2(&swDispatch);
-		swMassProperty = swDispatch;
-		result = swMassProperty->get_CenterOfMass(&massCenterVT);
+		if (swDispatch == NULL) {
+			CComPtr<IMassProperty> gg;
+			result = swDocE->CreateMassProperty(&gg);
+			result = gg->get_CenterOfMass(&massCenterVT);
+		}
+		else {
+			swMassProperty = swDispatch;
+			result = swMassProperty->get_CenterOfMass(&massCenterVT);
+		}
+		
 		LPVOID mcData = nullptr;
 		LONG mcCount;
 		if (!ReadSafeArray(&massCenterVT, VT_R8, 1, &mcData, &mcCount)) {
@@ -1255,6 +1269,21 @@ namespace MyApp {
 		MinBoxVertex = glm::vec3(myboxData[0], myboxData[1], myboxData[2]) * 1000.0f; //米->毫米
 		MaxBoxVertex = glm::vec3(myboxData[3], myboxData[4], myboxData[5]) * 1000.0f; //米->毫米
 
+		//初始姿态变化
+		glm::mat4 originalModelMatrix;
+		originalModelMatrix = glm::rotate(originalModelMatrix, glm::radians(angleList[0]), glm::vec3(1.0f, 0.0f, 0.0f));
+		originalModelMatrix = glm::rotate(originalModelMatrix, glm::radians(angleList[1]), glm::vec3(0.0f, 1.0f, 0.0f));
+		originalModelMatrix = glm::rotate(originalModelMatrix, glm::radians(angleList[2]), glm::vec3(0.0f, 0.0f, 1.0f));
+		MassCenter = originalModelMatrix * glm::vec4(MassCenter, 1.0f);
+
+		glm::vec3 tempMin = originalModelMatrix * glm::vec4(MinBoxVertex, 1.0f);
+		glm::vec3 tempMax = originalModelMatrix * glm::vec4(MaxBoxVertex, 1.0f);
+		MinBoxVertex.x = tempMin.x < tempMax.x ? tempMin.x : tempMax.x;
+		MinBoxVertex.y = tempMin.y < tempMax.y ? tempMin.y : tempMax.y;
+		MinBoxVertex.z = tempMin.z < tempMax.z ? tempMin.z : tempMax.z;
+		MaxBoxVertex.x = tempMin.x > tempMax.x ? tempMin.x : tempMax.x;
+		MaxBoxVertex.y = tempMin.y > tempMax.y ? tempMin.y : tempMax.y;
+		MaxBoxVertex.z = tempMin.z > tempMax.z ? tempMin.z : tempMax.z;
 
 		return true;
 	}

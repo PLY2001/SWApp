@@ -21,12 +21,12 @@ def main(inputName,hasMBD,modelCount):
     # hasMBD = "y" #input("是否考虑MBD？ y/n:")
     dataset = "MBDViewDataset" if hasMBD == 1 else "MBDViewDataset_noMBD"
     #modelCount = 8
-    viewCount = 18
+    viewCount = 12
     featureSize = 128
     picturesType = []
 
     viewDirCount = 3
-    viewTypeCount = 3
+    viewTypeCount = 2
     cullModeCount = 2
     for i in range(viewDirCount):
         for j in range(viewTypeCount):

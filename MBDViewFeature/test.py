@@ -15,9 +15,14 @@ import torch.nn.functional as F
 
 import numpy as np
 import re
-
-a = torch.tensor([[1, 2], [3, 4]])
-b = torch.tensor([[5, 6], [7, 8]])
-
-result = torch.mm(a, b.t())
-print(result)
+import math
+modelc = 5
+train_steps = int(math.factorial(modelc)/(2*math.factorial(modelc-2)))
+imagesIndex = []
+for i in range(train_steps):
+    j = i
+    while j + 1<modelc:
+        imagesIndex.append(i)
+        imagesIndex.append(j + 1)
+        j+=1
+print(imagesIndex)

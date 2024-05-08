@@ -300,6 +300,9 @@ namespace MyApp {
 		long swaTime = 0;//表面粗糙度读取循环耗时
 		long bTime = 0;//非MBD面读取循环耗时
 
+		//模型初始姿态
+		float angleList[3] = { 0,0,0 };
+
 		//std::mutex mtx;
 		//void FeatureLoop(int feIndex, IDispatch** & myfeData);
 		//void AnnotationLoop(int aIndex, IDispatch**& myaData, MyFaceFeature &faceFeature);

@@ -49,6 +49,8 @@ struct Material
 out vec4 color; 
 
 uniform Material material;
+uniform vec3 cameraFront;
+uniform int toCullBack;
 
 in VS_OUT{
 	vec2 v_texcoord;//从顶点着色器传入的变量
@@ -59,5 +61,9 @@ in VS_OUT{
 
 void main() 
 {
-	color =vec4(1.0f,0.0f,0.0f,0.6f);//*(1.0f-shadowColor) //texColor;//u_color;//vec4(0.2,0.7,0.3,1.0); 
+	//color =vec4(1.0f,0.0f,0.0f,0.6f);//*(1.0f-shadowColor) //texColor;//u_color;//vec4(0.2,0.7,0.3,1.0); 
+	vec3 normal = normalize(fs_in.v_WorldNormal.xyz);
+	float alpha = dot(normal,cameraFront) > 0.0f? 0.0f : 0.6f;
+	alpha = toCullBack > 0? alpha : 0.6f;
+	color =vec4(1.0f,0.0f,0.0f,alpha);
 }

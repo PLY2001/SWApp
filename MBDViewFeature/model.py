@@ -254,17 +254,32 @@ class Loss_mv_ms(nn.Module):
         SVM /= self.batch_size
         return SVM
 
+    def SIMLOSS(self, fi, fj):
+        sim = torch.mm(fi, fj.t())
+        result = 0
+        for j in range(self.batch_size):
+            temp = torch.log(1-sim[j][j]*0.5-0.5) / self.batch_size
+            if float('-inf') < temp < float('inf'): #判断temp不为nan和inf
+                result = result - temp #-(-torch.log(sim[j][j]*0.5+0.5)+2*torch.log(1-sim[j][j]*0.5-0.5)) / self.batch_size
+        return result
+
     def forward(self, fi, fj, b):  # fi是模型i的随机t张视图的特征向量的集合，fj是剩余b-1个模型j的随机t张视图的特征向量的集合，b是这一批模型的个数
         loss = 0
         for i in range(1, b):
             SMM1 = self.avgSVM(fi, fi)  # 模型i的所有视图与模型i的相似度SVM求和再平均化
             SMM2sum = 0 # 模型i的所有视图与模型j的相似度SVM求和再平均化，而且模型j是共b-1个模型的总和
             sum = 0
+            # if b > 2:
+            #     for j in range(1, b-1):
+            #         SMM2sum += self.avgSVM(fi, fj[j])
+            #         sum += torch.exp(self.beta*(SMM2sum-self.lamda))
+            # else:
+            #     sum = torch.exp(self.beta * (self.avgSVM(fi, fj) - self.lamda))
+            # loss += 1/self.alpha*torch.log(1+torch.exp(-self.alpha*(SMM1-self.lamda)))+1/self.beta*torch.log(1+sum)
             if b > 2:
-                for j in range(1, b-1):
-                    SMM2sum += self.avgSVM(fi, fj[j])
-                    sum += torch.exp(self.beta*(SMM2sum-self.lamda))
+                for j in range(1, b - 1):
+                    loss += self.SIMLOSS(fi, fj[j])
             else:
-                sum = torch.exp(self.beta * (self.avgSVM(fi, fj) - self.lamda))
-            loss += 1/self.alpha*torch.log(1+torch.exp(-self.alpha*(SMM1-self.lamda)))+1/self.beta*torch.log(1+sum)
-        return torch.squeeze(loss)
+                loss += self.SIMLOSS(fi,fj)
+        loss = loss/(b-1)
+        return loss

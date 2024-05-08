@@ -57,13 +57,15 @@ private:
 	std::vector<myTexture> textures_loaded;
 	glm::mat4 mModelMatrix;
 	glm::mat4 defaultModelMatrix;
+	glm::mat4 originalModelMatrix;
 	glm::mat4 MatrixLerp(glm::mat4 x, glm::mat4 y, float t);
 	bool IsMoreThanVec3(glm::vec3 v1, glm::vec3 v2);
 	glm::vec3 GetVertex3D(glm::vec2 p, int i, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex);
 	glm::vec3 GetNormal(int i);
+	void ProcessNormal(std::vector<Vertex>& vertices);
 
 public:
-	Model(std::string path);
+	Model(std::string path, float* angleList);
 	Model(std::vector<glm::vec2>& vertexList, int index, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex, glm::vec3 massCenter);
 	Model() = default;
 	void Draw(Shader& shader);

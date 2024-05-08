@@ -1,8 +1,12 @@
 #include "Model.h"
 
 
-Model::Model(std::string path)
+Model::Model(std::string path, float* angleList)
 {
+	originalModelMatrix = glm::rotate(originalModelMatrix, glm::radians(angleList[0]), glm::vec3(1.0f, 0.0f, 0.0f));
+	originalModelMatrix = glm::rotate(originalModelMatrix, glm::radians(angleList[1]), glm::vec3(0.0f, 1.0f, 0.0f));
+	originalModelMatrix = glm::rotate(originalModelMatrix, glm::radians(angleList[2]), glm::vec3(0.0f, 0.0f, 1.0f));
+
 	Assimp::Importer import;
 	const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);// | aiProcess_CalcTangentSpace);
 
@@ -13,16 +17,17 @@ Model::Model(std::string path)
 	}
 	directory = path.substr(0, path.find_last_of('/'));
 	processNode(scene->mRootNode, scene);
-
 	//SetPosition();
 }
 
 
 Model::Model(std::vector<glm::vec2>& vertexList, int index, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex, glm::vec3 MassCenter)
 {
+
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
 	std::vector<myTexture> textures;
+
 
 	float clampBorder = 1.001f;
 	glm::vec3 maxBorderPosition = MassCenter + (maxBoxVertex - MassCenter) * clampBorder;
@@ -107,10 +112,12 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		vertex.Position.x = mesh->mVertices[i].x;
 		vertex.Position.y = mesh->mVertices[i].y;
 		vertex.Position.z = mesh->mVertices[i].z;
+		vertex.Position = originalModelMatrix * glm::vec4(vertex.Position, 1.0f);
 	
 		vertex.Normal.x = mesh->mNormals[i].x;
 		vertex.Normal.y = mesh->mNormals[i].y;
 		vertex.Normal.z = mesh->mNormals[i].z;
+		vertex.Normal = originalModelMatrix * glm::vec4(vertex.Normal, 0.0f);
 
 		//vertex.Tangent.x = mesh->mTangents[i].x;
 		//vertex.Tangent.y = mesh->mTangents[i].y;
@@ -146,7 +153,7 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 		//std::vector<myTexture> normalMaps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
 		//textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 	}
-
+	//ProcessNormal(vertices);//均匀化倒角（由于例如倒角导出的面是多个面，会导致法线均匀化显示失真，弃用）
 	return Mesh(vertices, indices, textures);
 }
 
@@ -282,6 +289,31 @@ glm::vec3 Model::GetNormal(int i)
 	case 5:
 		return glm::vec3(0.0f, -1.0f, 0.0f);
 	}
+}
+
+void Model::ProcessNormal(std::vector<Vertex>& vertices)
+{
+	std::map<VertexKey, glm::vec3> vlist;
+	VertexKey vk;
+	for (const Vertex& vertex : vertices) {		
+		vk.v = vertex.Position;
+		if (vlist.count(vk) > 0) {
+			vlist[vk] += vertex.Normal;
+			continue;
+		}
+		else {
+			vlist[vk] = glm::vec3(0) + vertex.Normal;
+		}
+	}
+
+	int vertexIndex = 0;
+	for (const Vertex& vertex : vertices) {
+		vk.v = vertex.Position;
+		vertices[vertexIndex].Normal = glm::normalize(vlist[vk]);
+		vertexIndex++;
+	}
+	
+	
 }
 
 void Model::Draw(Shader& shader)
