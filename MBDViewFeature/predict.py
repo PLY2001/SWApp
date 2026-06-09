@@ -17,15 +17,22 @@ import numpy as np
 import re
 
 def main():
-    hasMBD = input("是否考虑MBD？ y/n:")
-    dataset = "MBDViewDataset" if hasMBD == "y" else "MBDViewDataset_noMBD"
-    modelCount = 10
+    input_weight = [0.9,0.1,0.0]
+    simWeight = [input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4]
+    #hasMBD = input("是否考虑MBD？ y/n:")
+    dataset = "MBDViewDataset_noMBD"
+    modelCount = 2131
     viewCount = 24
     featureSize = 128
     picturesType = []
 
-    viewDirCount = 3
-    viewTypeCount = 4
+    viewDirCount = 6
+    viewTypeCount = 2
     cullModeCount = 2
     for i in range(viewDirCount):
         for j in range(viewTypeCount):
@@ -41,31 +48,45 @@ def main():
          transforms.ToTensor(),
          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(10, 16))
 
     # load image
-    inputName = input("检索目标名称:")
+    inputClass = '90 degree elbows' #input("检索目标类别:")
+    inputName = '1476618.stl_10846' #input("检索目标名称:")
     img_list = []
-    CADmodelName = "./" + dataset + "/photos/" + inputName
-    for i in range(viewCount):
-        img_path = CADmodelName + "_" + str(picturesType[i][0]) + "_" + str(picturesType[i][1]) + "_" + str(picturesType[i][2]) + ".bmp"  # 搜索这张图
-        assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
-        img = Image.open(img_path)
-        img = data_transform(img)
-        torchvision.utils.save_image(img, 'out.jpg')
-        # expand batch dimension
-        img = torch.unsqueeze(img, dim=0)
-        img_list.append(img)
+    CADmodelName = "./" + dataset +"/photos/"+ inputClass + "/" + inputName
 
-    img_path = "MBDViewModelPicture/" + inputName + "_.bmp" # 搜索这张图
+    inputIndex = 0
+    inputCount = 0
+    classList = os.listdir('./MBDViewModelPicture')
+    classList.sort()
+    for classIndex in range(len(classList)):
+        modelList = os.listdir('./MBDViewModelPicture/' + classList[classIndex] + '/')
+        modelList.sort()
+        for modelIndex in range(len(modelList)):
+            if modelList[modelIndex] == inputName + '_6_2_0.bmp':
+                inputIndex = inputCount
+            inputCount = inputCount + 1
+
+    # for i in range(viewCount):
+    #     img_path = CADmodelName + "_" + str(picturesType[i][0]) + "_" + str(picturesType[i][1]) + "_" + str(picturesType[i][2]) + ".bmp"  # 搜索这张图
+    #     assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
+    #     img = Image.open(img_path)
+    #     img = data_transform(img)
+    #     torchvision.utils.save_image(img, 'out.jpg')
+    #     # expand batch dimension
+    #     img = torch.unsqueeze(img, dim=0)
+    #     img_list.append(img)
+
+    img_path = "MBDViewModelPicture/" + inputClass + "/" + inputName + "_6_2_0.bmp" # 搜索这张图
     assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
     img = Image.open(img_path)
 
-    plt.subplot(231)
+    plt.subplot(4,3,1)
     plt.axis('off')
     plt.imshow(img)
     plt.rcParams['font.size'] = 20
-    hasMBDtitle = "(含MBD信息)" if hasMBD == "y" else "(不含MBD信息)"
+    hasMBDtitle = "(不含MBD信息)"
     plt.title(f"[检索目标]\n{inputName}\n{hasMBDtitle}")
 
     # read dataset
@@ -94,6 +115,8 @@ def main():
             if viewIndex == viewCount - 1:
                 CADmodel_list[modelIndex] = views[:]
                 views = np.ones((viewCount, featureSize),dtype=np.float32)
+                if inputIndex == modelIndex:
+                    output_tensor = torch.tensor(CADmodel_list[modelIndex]).to(device)
                 modelIndex = modelIndex + 1
             viewIndex = (viewIndex + 1) % viewCount
             view_list.clear()
@@ -127,11 +150,11 @@ def main():
     output_list = []
     model.eval()
     with torch.no_grad():
-        for img in img_list:
-            output = model(img.to(device))
-            # output = F.normalize(output, p=2, dim=1)
-            output_list.append(output)
-        output_tensor = torch.cat((output_list[:]), 0).to(device)
+        # for img in img_list:
+        #     output = model(img.to(device))
+        #     # output = F.normalize(output, p=2, dim=1)
+        #     output_list.append(output)
+        # output_tensor = torch.cat((output_list[:]), 0).to(device)
 
         sim_dic = {}
         predict_bar = tqdm(range(len(CADmodel_tensor)), file=sys.stdout)
@@ -144,7 +167,7 @@ def main():
             # similarity = (output@view.t()).item()
             sim = 0
             for j in range (viewCount) :
-                sim = sim + similarity[j][j]/viewCount
+                sim = sim + similarity[j][j]/viewCount*(simWeight[j])
             sim_dic[i] = sim
             # if similarity > best_similarity:
             #     best_similarity = similarity
@@ -155,20 +178,29 @@ def main():
     # print(f"best_similarity = {best_similarity}")
 
     # load image
-    fileList = os.listdir('./MBDViewModelPicture')
-    fileList.sort()
+    classList = os.listdir('./MBDViewModelPicture')
+    classList.sort()
     FileNameList = []
     SimList = []
-    for i in range(5 if 5 < len(CADmodel_list) else len(CADmodel_list)):
+    fileList = os.listdir('./MBDViewModelPicture/' + classList[0] + '/')
+    for i in range(11 if 11 < len(CADmodel_list) else len(CADmodel_list)):
         thisindex = sim_order[i][0]
-        Target_img_path = "./MBDViewModelPicture/"+fileList[thisindex]
+        classIndex = 0
+        indexCount = 0
+        while indexCount <= thisindex:
+            fileList = os.listdir('./MBDViewModelPicture/' + classList[classIndex] + '/')
+            indexCount = indexCount + len(fileList)
+            classIndex = classIndex + 1
+        classIndex = classIndex - 1
+        indexInClass = thisindex - indexCount
+        Target_img_path = "./MBDViewModelPicture/"+classList[classIndex]+"/"+ fileList[indexInClass]
         img1 = Image.open(Target_img_path)
-        plt.subplot(232+i)
+        plt.subplot(4,3,2+i)
         plt.axis('off')
         plt.imshow(img1)
         plt.rcParams['font.size'] = 20
-        plt.title(f"【检索结果 {i+1}】\n{fileList[thisindex][:-5]}\n相似度：{round(sim_order[i][1].item()*100,1)}%")
-        FileNameList.append(fileList[thisindex])
+        plt.title(f"【检索结果 {i+1}】\n{classList[classIndex]}\n{fileList[indexInClass][:-10]}\n相似度：{round(sim_order[i][1].item()*100,1)}%")
+        FileNameList.append(classList[classIndex]+"/"+fileList[indexInClass])
         SimList.append(sim_order[i][1].tolist())
 
     if (os.path.isfile("./Results/FileNameList.json")):

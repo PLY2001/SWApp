@@ -1,0 +1,153 @@
+﻿Cluster ID,Fine-Grained Class,Count,Percentage in Cluster,Cluster Total
+0,Cylindrical pins,12,8.4%,143
+0,Grooved pins,12,8.4%,143
+0,Studs,12,8.4%,143
+0,Threaded rods,12,8.4%,143
+0,Eye screws,11,7.7%,143
+0,Screws and bolts with countersunk head,11,7.7%,143
+0,Setscrew,10,7.0%,143
+0,Socket,10,7.0%,143
+0,Taper pins,10,7.0%,143
+0,Screws and bolts with cylindrical head,8,5.6%,143
+0,"Articulations, eyelets and other articulated joints",7,4.9%,143
+0,Roll pins,7,4.9%,143
+0,Split pins,7,4.9%,143
+0,Tapping screws,7,4.9%,143
+0,Screws and bolts with hexagonal head,6,4.2%,143
+0,Washer bolt,1,0.7%,143
+1,Pulleys,9,25.7%,35
+1,Helical geared motors,7,20.0%,35
+1,Gear like Parts,6,17.1%,35
+1,Clamps,3,8.6%,35
+1,Motor Bodies,3,8.6%,35
+1,Nozzle,3,8.6%,35
+1,Rocker Arms,2,5.7%,35
+1,Bearing Blocks,1,2.9%,35
+1,Rectangular Housings,1,2.9%,35
+2,Locknuts,12,26.7%,45
+2,Hexagonal nuts,10,22.2%,45
+2,Plain guidings,7,15.6%,45
+2,Castle nuts,5,11.1%,45
+2,Slotted nuts,5,11.1%,45
+2,Flange nut,3,6.7%,45
+2,90 degree elbows,1,2.2%,45
+2,Collars,1,2.2%,45
+2,Flanged block bearing,1,2.2%,45
+3,Lockwashers,12,29.3%,41
+3,Thrust washers,12,29.3%,41
+3,Spring washers,11,26.8%,41
+3,Convex washer,6,14.6%,41
+4,Snap rings,12,35.3%,34
+4,Bolt Like Parts,7,20.6%,34
+4,Split pins,5,14.7%,34
+4,Spoked Wheels,4,11.8%,34
+4,U shaped parts,4,11.8%,34
+4,Socket,1,2.9%,34
+4,Washer bolt,1,2.9%,34
+5,Lever,10,26.3%,38
+5,T shaped parts,5,13.2%,38
+5,Handles,4,10.5%,38
+5,Back Doors,3,7.9%,38
+5,Helical geared motors,3,7.9%,38
+5,Posts,3,7.9%,38
+5,Bolt Like Parts,2,5.3%,38
+5,Clamps,2,5.3%,38
+5,Contact Switches,1,2.6%,38
+5,Gear like Parts,1,2.6%,38
+5,Nozzle,1,2.6%,38
+5,Socket,1,2.6%,38
+5,Spoked Wheels,1,2.6%,38
+5,U shaped parts,1,2.6%,38
+6,Castle nuts,7,23.3%,30
+6,Slotted nuts,5,16.7%,30
+6,Square nuts,5,16.7%,30
+6,Oil Pans,3,10.0%,30
+6,Collars,2,6.7%,30
+6,Hexagonal nuts,2,6.7%,30
+6,Plain guidings,2,6.7%,30
+6,Curved Housings,1,3.3%,30
+6,Flange nut,1,3.3%,30
+6,Flanged block bearing,1,3.3%,30
+6,Helical geared motors,1,3.3%,30
+7,"Articulations, eyelets and other articulated joints",5,12.2%,41
+7,Roll pins,5,12.2%,41
+7,Screws and bolts with hexagonal head,4,9.8%,41
+7,Washer bolt,4,9.8%,41
+7,Bolt Like Parts,3,7.3%,41
+7,Nozzle,3,7.3%,41
+7,Tapping screws,3,7.3%,41
+7,Handles,2,4.9%,41
+7,Lever,2,4.9%,41
+7,Plain guidings,2,4.9%,41
+7,Screws and bolts with cylindrical head,2,4.9%,41
+7,Taper pins,2,4.9%,41
+7,Conventional rivets,1,2.4%,41
+7,Eye screws,1,2.4%,41
+7,Plugs,1,2.4%,41
+7,Spacers,1,2.4%,41
+8,Nozzle,5,29.4%,17
+8,Plugs,3,17.6%,17
+8,Rivet nut,3,17.6%,17
+8,90 degree elbows,1,5.9%,17
+8,Bushes,1,5.9%,17
+8,Collars,1,5.9%,17
+8,Posts,1,5.9%,17
+8,Rocker Arms,1,5.9%,17
+8,Simple Pipes,1,5.9%,17
+9,Conventional rivets,11,30.6%,36
+9,Plugs,6,16.7%,36
+9,Washer bolt,6,16.7%,36
+9,Bolt Like Parts,3,8.3%,36
+9,Screws and bolts with cylindrical head,2,5.6%,36
+9,Screws and bolts with hexagonal head,2,5.6%,36
+9,Setscrew,2,5.6%,36
+9,Tapping screws,2,5.6%,36
+9,90 degree elbows,1,2.8%,36
+9,Screws and bolts with countersunk head,1,2.8%,36
+10,Cap nuts,12,26.1%,46
+10,90 degree elbows,10,21.7%,46
+10,Rivet nut,9,19.6%,46
+10,Simple Pipes,4,8.7%,46
+10,Flange nut,3,6.5%,46
+10,Intersecting Pipes,3,6.5%,46
+10,Non-90 degree elbows,3,6.5%,46
+10,Bushes,1,2.2%,46
+10,Plain guidings,1,2.2%,46
+11,Bushes,7,41.2%,17
+11,Flanged block bearing,2,11.8%,17
+11,Plugs,2,11.8%,17
+11,Spacers,2,11.8%,17
+11,Bolt Like Parts,1,5.9%,17
+11,Collars,1,5.9%,17
+11,Curved Housings,1,5.9%,17
+11,Gear like Parts,1,5.9%,17
+12,Machined Plates,14,15.9%,88
+12,"Keys and keyways, splines",12,13.6%,88
+12,"Plates, circulate plates",12,13.6%,88
+12,Clamps,6,6.8%,88
+12,Flanged block bearing,6,6.8%,88
+12,Thick Slotted plates,6,6.8%,88
+12,Bracket like Parts,5,5.7%,88
+12,Thick Plates,4,4.5%,88
+12,Bearing Blocks,3,3.4%,88
+12,Gear like Parts,3,3.4%,88
+12,L Blocks,3,3.4%,88
+12,Machined Blocks,3,3.4%,88
+12,Rectangular Housings,3,3.4%,88
+12,U shaped parts,3,3.4%,88
+12,Contact Switches,2,2.3%,88
+12,Curved Housings,1,1.1%,88
+12,Helical geared motors,1,1.1%,88
+12,Spacers,1,1.1%,88
+13,Collars,7,24.1%,29
+13,Square nuts,7,24.1%,29
+13,Bearing Blocks,5,17.2%,29
+13,Bearing accessories,3,10.3%,29
+13,Pulleys,3,10.3%,29
+13,Slotted nuts,2,6.9%,29
+13,Machined Plates,1,3.4%,29
+13,Rectangular Housings,1,3.4%,29
+14,Bearing accessories,9,47.4%,19
+14,Spacers,8,42.1%,19
+14,Flanged block bearing,1,5.3%,19
+14,Spring washers,1,5.3%,19

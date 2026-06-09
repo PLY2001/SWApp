@@ -35,14 +35,14 @@ def main():
 
 
     data_root = os.getcwd()  # get data root path
-    image_path = os.path.join(data_root, "MBDViewDataset")  # flower data set path
+    image_path = os.path.join(data_root, "test_dataset")  # MBDViewDataset
     assert os.path.exists(image_path), "{} path does not exist.".format(image_path)
     train_dataset = datasets.ImageFolder(root=image_path,
                                          transform=data_transform["train"])
     train_num = len(train_dataset)
 
 
-    batch_size = 12
+    batch_size = 24
     nw = 0 #min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
     print('Using {} dataloader workers every process'.format(nw))
 
@@ -50,7 +50,10 @@ def main():
                                                batch_size=batch_size, shuffle=False,
                                                num_workers=nw)
 
-    validate_dataset = datasets.ImageFolder(root=image_path,
+    data_root = os.getcwd()  # get data root path
+    test_image_path = os.path.join(data_root, "test_dataset")  # flower data set path
+    assert os.path.exists(test_image_path), "{} path does not exist.".format(image_path)
+    validate_dataset = datasets.ImageFolder(root=test_image_path,
                                             transform=data_transform["val"])
     val_num = len(validate_dataset)
     validate_loader = torch.utils.data.DataLoader(validate_dataset,
@@ -86,9 +89,11 @@ def main():
     # with torch.autograd.set_detect_anomaly(True):
     epochs = 500
     best_valloss = 100.0
+    best_epoch = 0
     save_path = './MBDNet34.pth'
-    train_steps = int(math.factorial(len(train_loader))/(2*math.factorial(len(train_loader)-2)))
-    val_steps = int(math.factorial(len(validate_loader))/(2*math.factorial(len(validate_loader)-2)))
+    # model_count_perstep = 10
+    train_steps = len(train_loader) #int(math.factorial(len(train_loader))/(2*math.factorial(len(train_loader)-2))) #len(train_loader)
+    val_steps = len(validate_loader) # int(math.factorial(len(validate_loader))/(2*math.factorial(len(validate_loader)-2))) #round(len(validate_loader) / 2)
     train_loss_y_list = []
     train_loss_x_list = []
     val_loss_y_list = []
@@ -117,40 +122,50 @@ def main():
     else:
         print("val_imageslist is not empty")
 
+
+
+    #imagesIndex_temp = []
+    #for i in range(len(train_loader)):
+    #    imagesIndex_temp.append(i)
     imagesIndex = []
     for i in range(train_steps):
-        j = i
-        while j + 1 < len(train_loader):
-            imagesIndex.append(i)
-            imagesIndex.append(j + 1)
-            j += 1
+        # j = i
+        # while j + 1 < len(train_loader):
+        #     imagesIndex.append(i)
+        #     imagesIndex.append(j + 1)
+        #     j += 1
+        imagesIndex.append(i)
     val_imagesIndex = []
-    for i in range(val_step):
-        j = i
-        while j + 1 < len(validate_loader):
-            val_imagesIndex.append(i)
-            val_imagesIndex.append(j + 1)
-            j += 1
+    #for i in range(len(validate_loader)):
+    #    val_imagesIndex.append(i)
+    for i in range(val_steps):
+        # j = i
+        # while j + 1 < len(validate_loader):
+        #     val_imagesIndex.append(i)
+        #     val_imagesIndex.append(j + 1)
+        #     j += 1
+        val_imagesIndex.append(i)
+    val_imagesIndex = np.random.permutation(val_imagesIndex)
+    print(val_imagesIndex)
 
     for epoch in range(epochs):
         toContinue = 0
         running_loss = 0.0
         outputslist = []
-        new_imagesIndex = imagesIndex #np.random.permutation(imagesIndex)
+        #new_imagesIndex_temp = np.random.permutation(imagesIndex_temp) # imagesIndex #
+        new_imagesIndex = np.random.permutation(imagesIndex) #imagesIndex #   #
         #print(new_imagesIndex)
-        new_val_imagesIndex = val_imagesIndex #np.random.permutation(val_imagesIndex)
+        new_val_imagesIndex = np.random.permutation(val_imagesIndex)#val_imagesIndex #
 
-
-
-
-        for times in range(0, train_steps):
+        train_steps_bar = tqdm(range(0, train_steps), file=sys.stdout)
+        for times in train_steps_bar:
             #print(times)
             # train
             net.train()
             if (times + 1) % (batch_size / batch_size) != 0:  # 每两次算一次
                 continue
             optimizer.zero_grad()
-            outputs = net(imageslist[new_imagesIndex[times]].to(device))
+            outputs = net(imageslist[new_imagesIndex[times]].to(device)) #new_imagesIndex_temp[new_imagesIndex[times]]
             outputslist.append(outputs)
 
             if (times + 1) % (batch_size*2 / batch_size) != 0:  # 每4次算一次
@@ -182,7 +197,8 @@ def main():
         valoutputslist = []
 
         with torch.no_grad():
-            for times in range(0, val_steps):
+            val_steps_bar = tqdm(range(0, val_steps), file=sys.stdout)
+            for times in val_steps_bar:
                 #print(times)
                 if (times + 1) % (batch_size / batch_size) != 0:  # 每两次算一次
                     continue
@@ -211,11 +227,13 @@ def main():
         valloss = valloss / val_steps
         if valloss < best_valloss:
             best_valloss = valloss
+            best_epoch = epoch
             torch.save(net.state_dict(), save_path)
 
         plt.plot(train_loss_x_list, train_loss_y_list, color='red')
         plt.plot(val_loss_x_list, val_loss_y_list, color='blue')
         plt.legend(['train_loss', 'val_loss'], loc='upper right')
+        plt.scatter(best_epoch+1, best_valloss, color='red')
         plt.xlabel('Epoch')
         plt.ylabel('Loss')
         ax = plt.gca()
@@ -229,6 +247,8 @@ def main():
         #         toContinue = int(input("输入1继续，输入2终止并保存"))
         # if toContinue == 2:
         #     break
+        if epoch > 200:
+            break
     print('Finished Training')
 
 

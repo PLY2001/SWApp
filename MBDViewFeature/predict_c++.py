@@ -1,4 +1,25 @@
 import os
+import sys
+
+# ==========================================================
+# 【新增代码】 解决 C++ 调用时的 DLL 缺失问题
+# 必须放在 import torch 或 import numpy 之前！
+# ==========================================================
+# 指向你的 conda 环境根目录 (根据你的报错路径填写的)
+conda_env_path = r"C:\Users\PLY\anaconda3\envs\torchgpu"
+
+# 拼接 Library\bin 目录，这是存放 mkl_rt.dll 等关键库的地方
+os.environ['PATH'] = os.path.join(conda_env_path, r"Library\bin") + ";" + os.environ['PATH']
+
+# 如果是 Python 3.8+，有时候还需要这句显式添加 DLL 目录
+if hasattr(os, 'add_dll_directory'):
+    try:
+        os.add_dll_directory(os.path.join(conda_env_path, r"Library\bin"))
+    except Exception:
+        pass
+# ==========================================================
+
+import os
 import json
 import sys
 
@@ -16,24 +37,31 @@ import torch.nn.functional as F
 import numpy as np
 import re
 
-def main(inputName,hasMBD,modelCount):
+def main(inputName,hasMBD,modelCount,MBDWeight):
+    input_weight = [(1.0-MBDWeight)*0.4, MBDWeight, (1.0-MBDWeight)*0.6]
+    simWeight = [input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4,
+                 input_weight[0] * 4, input_weight[1] / 2 * 4, input_weight[2] * 4, input_weight[1] / 2 * 4]
     os.chdir("C:/Users/PLY/Desktop/Files/Projects/Pycharm Projects/MBDViewFeature")
     # hasMBD = "y" #input("是否考虑MBD？ y/n:")
     dataset = "MBDViewDataset" if hasMBD == 1 else "MBDViewDataset_noMBD"
-    #modelCount = 8
-    viewCount = 12
+    # modelCount = 8
+    viewCount = 24
     featureSize = 128
     picturesType = []
 
-    viewDirCount = 3
+    viewDirCount = 6
     viewTypeCount = 2
     cullModeCount = 2
     for i in range(viewDirCount):
         for j in range(viewTypeCount):
             for k in range(cullModeCount):
-                picturesType.append([i,j,k])
+                picturesType.append([i, j, k])
 
-    #matplotlib.use("TKAgg")
+    # matplotlib.use("TKAgg")
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     data_transform = transforms.Compose(
@@ -42,32 +70,32 @@ def main(inputName,hasMBD,modelCount):
          transforms.ToTensor(),
          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
-    plt.figure(figsize=(10, 8))
 
     # load image
     # inputName = input("检索目标名称:")
+    # load image
     img_list = []
     CADmodelName = "./" + dataset + "/photos/" + inputName
-    for i in range(viewCount):
-        img_path = CADmodelName + "_" + str(picturesType[i][0]) + "_" + str(picturesType[i][1]) + "_" + str(picturesType[i][2]) + ".bmp"  # 搜索这张图
-        assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
-        img = Image.open(img_path)
-        img = data_transform(img)
-        torchvision.utils.save_image(img, 'out.jpg')
-        # expand batch dimension
-        img = torch.unsqueeze(img, dim=0)
-        img_list.append(img)
+    modelList = os.listdir('./MBDViewModelPicture')
+    modelList.sort()
+    inputIndex = 0
+    for modelIndex in range(len(modelList)):
+        if modelList[modelIndex] == inputName + '_6_2_0.bmp':
+            inputIndex = modelIndex
+    # for i in range(viewCount):
+    #     img_path = CADmodelName + "_" + str(picturesType[i][0]) + "_" + str(picturesType[i][1]) + "_" + str(
+    #         picturesType[i][2]) + ".bmp"  # 搜索这张图
+    #     assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
+    #     img = Image.open(img_path)
+    #     img = data_transform(img)
+    #     torchvision.utils.save_image(img, 'out.jpg')
+    #     # expand batch dimension
+    #     img = torch.unsqueeze(img, dim=0)
+    #     img_list.append(img)
 
-    img_path = "MBDViewModelPicture/" + inputName + "_.bmp" # 搜索这张图
+    img_path = "MBDViewModelPicture/" + inputName + "_6_2_0.bmp"  # 搜索这张图
     assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)
     img = Image.open(img_path)
-
-    plt.subplot(231)
-    plt.axis('off')
-    plt.imshow(img)
-    plt.rcParams['font.size'] = 20
-    hasMBDtitle = "(含MBD信息)" if hasMBD == "y" else "(不含MBD信息)"
-    plt.title(f"[检索目标]\n{inputName}\n{hasMBDtitle}")
 
     # read dataset
     json_path = "./" + dataset + ".json"
@@ -77,10 +105,10 @@ def main(inputName,hasMBD,modelCount):
     #     data_list = json.load(f)
 
     file = open(json_path, 'r')
-    views = np.ones((viewCount, featureSize),dtype=np.float32)
+    views = np.ones((viewCount, featureSize), dtype=np.float32)
     CADmodel_list = np.empty((modelCount, viewCount, featureSize), dtype=np.float32)
     view_list = []
-    #load_bar = tqdm(file.readlines(), file=sys.stdout)
+    # load_bar = tqdm(file.readlines(), file=sys.stdout)
     load_bar = file.readlines()
     viewStart = False
     viewStop = True
@@ -95,7 +123,9 @@ def main(inputName,hasMBD,modelCount):
             views[viewIndex, :] = view_list[:]
             if viewIndex == viewCount - 1:
                 CADmodel_list[modelIndex] = views[:]
-                views = np.ones((viewCount, featureSize),dtype=np.float32)
+                views = np.ones((viewCount, featureSize), dtype=np.float32)
+                if inputIndex == modelIndex:
+                    output_tensor = torch.tensor(CADmodel_list[modelIndex]).to(device)
                 modelIndex = modelIndex + 1
             viewIndex = (viewIndex + 1) % viewCount
             view_list.clear()
@@ -112,11 +142,9 @@ def main(inputName,hasMBD,modelCount):
                     num = json.loads(match[0])
                     view_list.append(num)
 
-        #load_bar.desc = "加载数据库中"
+        # load_bar.desc = "加载数据库中"
 
-
-
-    CADmodel_tensor = torch.tensor(CADmodel_list).to(device) #pan1在pan之前
+    CADmodel_tensor = torch.tensor(CADmodel_list).to(device)  # pan1在pan之前
     # create model
     model = resnet34().to(device)
 
@@ -129,14 +157,14 @@ def main(inputName,hasMBD,modelCount):
     output_list = []
     model.eval()
     with torch.no_grad():
-        for img in img_list:
-            output = model(img.to(device))
-            # output = F.normalize(output, p=2, dim=1)
-            output_list.append(output)
-        output_tensor = torch.cat((output_list[:]), 0).to(device)
+        # for img in img_list:
+        #     output = model(img.to(device))
+        #     # output = F.normalize(output, p=2, dim=1)
+        #     output_list.append(output)
+        # #output_tensor = torch.cat((output_list[:]), 0).to(device)
 
         sim_dic = {}
-        #predict_bar = tqdm(range(len(CADmodel_tensor)), file=sys.stdout)
+        # predict_bar = tqdm(range(len(CADmodel_tensor)), file=sys.stdout)
         predict_bar = range(len(CADmodel_tensor))
         for i in predict_bar:
             index = torch.tensor([i]).to(device)
@@ -146,13 +174,13 @@ def main(inputName,hasMBD,modelCount):
             similarity = torch.mm(output_tensor, views.t())
             # similarity = (output@view.t()).item()
             sim = 0
-            for j in range (viewCount) :
-                sim = sim + similarity[j][j]/viewCount
+            for j in range(viewCount):
+                sim = sim + similarity[j][j] / viewCount * simWeight[j]
             sim_dic[i] = sim
             # if similarity > best_similarity:
             #     best_similarity = similarity
             #     best_index = i
-            #predict_bar.desc = "检索中"
+            # predict_bar.desc = "检索中"
     sim_order = sorted(sim_dic.items(), key=lambda x: x[1], reverse=True)
 
     # print(f"best_similarity = {best_similarity}")
@@ -162,15 +190,8 @@ def main(inputName,hasMBD,modelCount):
     fileList.sort()
     FileNameList = []
     SimList = []
-    for i in range(5 if 5 < len(CADmodel_list) else len(CADmodel_list)):
+    for i in range(11 if 11 < len(CADmodel_list) else len(CADmodel_list)):
         thisindex = sim_order[i][0]
-        Target_img_path = "./MBDViewModelPicture/"+fileList[thisindex]
-        img1 = Image.open(Target_img_path)
-        plt.subplot(232+i)
-        plt.axis('off')
-        plt.imshow(img1)
-        plt.rcParams['font.size'] = 20
-        plt.title(f"【检索结果 {i+1}】\n{fileList[thisindex][:-5]}\n相似度：{round(sim_order[i][1].item()*100,1)}%")
         FileNameList.append(fileList[thisindex])
         SimList.append(sim_order[i][1].tolist())
 
@@ -185,12 +206,5 @@ def main(inputName,hasMBD,modelCount):
     json_str = json.dumps(SimList, indent=0)
     with open('./Results/SimList.json', 'a') as json_file:
         json_file.write(json_str)
-
-
-    # plt.subplots_adjust(left=None, bottom=None, right=None, top=0.75, wspace=0.5, hspace=1.0)
-    # plt.rcParams['font.sans-serif'] = ['SimHei']
-    # plt.rcParams['font.size'] = 30
-    # plt.suptitle("三维检索系统")
-    # plt.show()
 
     return 1

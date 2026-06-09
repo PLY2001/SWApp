@@ -1,7 +1,52 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
+import math
 
+# 多头注意力机制类
+class MultiHeadAttention(nn.Module):
+    def __init__(self, hidden_size, num_heads):
+        super(MultiHeadAttention, self).__init__()
+        assert hidden_size % num_heads == 0, "hidden_size必须能被num_heads整除"
+        self.num_heads = num_heads
+        self.hidden_size = hidden_size
+        self.head_dim = hidden_size // num_heads
+
+        # Q, K, V的线性变换层
+        self.query = nn.Linear(hidden_size, hidden_size)
+        self.key = nn.Linear(hidden_size, hidden_size)
+        self.value = nn.Linear(hidden_size, hidden_size)
+        self.fc_out = nn.Linear(hidden_size, hidden_size)
+
+    def forward(self, query, key, value):
+        batch_size = query.size(0)
+
+        # 对Q, K, V进行线性变换并分头
+        Q = self.query(query).view(batch_size, -1, self.num_heads, self.head_dim).transpose(1, 2)
+        K = self.key(key).view(batch_size, -1, self.num_heads, self.head_dim).transpose(1, 2)
+        V = self.value(value).view(batch_size, -1, self.num_heads, self.head_dim).transpose(1, 2)
+
+        # 计算注意力分数
+        attn_scores = torch.matmul(Q, K.transpose(-2, -1)) / math.sqrt(self.head_dim)
+        attn_weights = F.softmax(attn_scores, dim=-1)
+
+        # 计算注意力输出
+        attn_out = torch.matmul(attn_weights, V)
+        attn_out = attn_out.transpose(1, 2).contiguous().view(batch_size, -1, self.hidden_size)
+
+        # 最后一层线性变换
+        out = self.fc_out(attn_out)
+        return out, attn_weights
+
+# 前馈神经网络类
+class FeedForward(nn.Module):
+    def __init__(self, hidden_size, ff_size):
+        super(FeedForward, self).__init__()
+        self.fc1 = nn.Linear(hidden_size, ff_size)
+        self.fc2 = nn.Linear(ff_size, hidden_size)
+
+    def forward(self, x):
+        return self.fc2(F.gelu(self.fc1(x)))
 
 class BasicBlock(nn.Module):  # 定义18层、34层ResNet的残差结构块
     expansion = 1  # 对于18层、34层，残差结构块中有2个卷积层，每个卷积层的卷积核个数是一样的，即1倍，expansion = 1
@@ -123,6 +168,11 @@ class ResNet(nn.Module):
             self.ReLU = nn.ReLU(inplace=True)
             self.Dropout = nn.Dropout(p=0.5)
             self.Dense2 = nn.Linear(1024, 128)
+            #注意力机制
+            # self.attention = MultiHeadAttention(128, 8)
+            # self.feed_forward = FeedForward(128, 256)
+            # self.layer_norm1 = nn.LayerNorm(128)
+            # self.layer_norm2 = nn.LayerNorm(128)
 
 
         for m in self.modules():  # 卷积层权重初始化
@@ -178,6 +228,18 @@ class ResNet(nn.Module):
             # x = self.Dropout(x)
             x = self.Dense2(x)
             x = F.normalize(x, p=2, dim=1)
+            #注意力机制
+            # x = torch.unsqueeze(x,0)
+            # y,_ = self.attention(x, x, x)
+            # x = x + y
+            # x = self.layer_norm1(x)
+            # y = self.feed_forward(x)
+            # x = x + y
+            # x = self.layer_norm2(x)
+            # x = x.reshape([-1,128])# 12
+            # x = F.normalize(x, p=2, dim=1)
+
+
 
         return x
 
@@ -254,21 +316,25 @@ class Loss_mv_ms(nn.Module):
         SVM /= self.batch_size
         return SVM
 
-    def SIMLOSS(self, fi, fj):
+    def SIMLOSS(self, fi, fj, weight):
         sim = torch.mm(fi, fj.t())
         result = 0
+        size = 0
         for j in range(self.batch_size):
-            temp = torch.log(1-sim[j][j]*0.5-0.5) / self.batch_size
+            if weight[j]>0:
+                size += weight[j]
+        for j in range(self.batch_size):
+            temp = torch.log(1-sim[j][j]*weight[j]*0.5-0.5) / size
             if float('-inf') < temp < float('inf'): #判断temp不为nan和inf
                 result = result - temp #-(-torch.log(sim[j][j]*0.5+0.5)+2*torch.log(1-sim[j][j]*0.5-0.5)) / self.batch_size
         return result
 
-    def forward(self, fi, fj, b):  # fi是模型i的随机t张视图的特征向量的集合，fj是剩余b-1个模型j的随机t张视图的特征向量的集合，b是这一批模型的个数
+    def forward(self, fi, fj, b, weight):  # fi是模型i的随机t张视图的特征向量的集合，fj是剩余b-1个模型j的随机t张视图的特征向量的集合，b是这一批模型的个数
         loss = 0
         for i in range(1, b):
-            SMM1 = self.avgSVM(fi, fi)  # 模型i的所有视图与模型i的相似度SVM求和再平均化
-            SMM2sum = 0 # 模型i的所有视图与模型j的相似度SVM求和再平均化，而且模型j是共b-1个模型的总和
-            sum = 0
+            # SMM1 = self.avgSVM(fi, fi)  # 模型i的所有视图与模型i的相似度SVM求和再平均化
+            # SMM2sum = 0 # 模型i的所有视图与模型j的相似度SVM求和再平均化，而且模型j是共b-1个模型的总和
+            # sum = 0
             # if b > 2:
             #     for j in range(1, b-1):
             #         SMM2sum += self.avgSVM(fi, fj[j])
@@ -278,8 +344,8 @@ class Loss_mv_ms(nn.Module):
             # loss += 1/self.alpha*torch.log(1+torch.exp(-self.alpha*(SMM1-self.lamda)))+1/self.beta*torch.log(1+sum)
             if b > 2:
                 for j in range(1, b - 1):
-                    loss += self.SIMLOSS(fi, fj[j])
+                    loss += self.SIMLOSS(fi, fj[j],weight)
             else:
-                loss += self.SIMLOSS(fi,fj)
+                loss += self.SIMLOSS(fi,fj,weight)
         loss = loss/(b-1)
         return loss

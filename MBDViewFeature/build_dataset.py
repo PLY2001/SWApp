@@ -12,8 +12,8 @@ from tqdm import tqdm
 from model import resnet34,Loss_mv_ms
 
 def main():
-    hasMBD = input("是否考虑MBD？ y/n:")
-    dataset = "MBDViewDataset" if hasMBD == "y" else "MBDViewDataset_noMBD"
+    #hasMBD = input("是否考虑MBD？ y/n:")
+    dataset = "MBDViewDataset"#_noMBD"
     viewCount = 24
     if (os.path.isfile(dataset + ".json")):
         os.remove(dataset + ".json")
@@ -27,7 +27,7 @@ def main():
                                          transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])])
 
     data_root = os.getcwd()  # get data root path
-    image_path = os.path.join(data_root, dataset)  # flower data set path
+    image_path = os.path.join(data_root, dataset)  # flower data set path +"/photos"
     assert os.path.exists(image_path), "{} path does not exist.".format(image_path)
     dataset1 = datasets.ImageFolder(root=image_path,
                                          transform=data_transform)
