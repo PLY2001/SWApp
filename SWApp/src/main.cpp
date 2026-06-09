@@ -22,12 +22,14 @@
 #include "InstanceBuffer.h"
 #include "FrameBuffer.h"
 #include "Texture.h"
+#include "Origin.h"
 
 #include <stack> //栈
 
 #include <Python.h>//Python API
 
 #include "Config.h"
+#include <random>
 
 PyObject* pModule_predict = nullptr;
 PyObject* pFunc_predict = nullptr; 
@@ -39,14 +41,29 @@ std::unordered_map<std::string, MyApp::MyFaceFeature> faceMap;//获取面哈希�
 std::map<MyApp::SWState, MyApp::MyState> swStateMap;//获取SW交互状态
 
 enum class ViewDirection {
-	FrontView, SideView, VerticalView, ObliqueView, BackView, RightView, DownView
+	FrontView, SideView, VerticalView,  BackView, RightView, DownView, ObliqueView
 };//视图方向：前视图，侧视图，俯视图, 斜视图
 ViewDirection viewDirection = ViewDirection::FrontView;//记录当前视图方向
 
 enum class ViewType {
-	MBDType1, MBDType2, Diffuse, Depth
+	Type1, Type2, Diffuse//, Depth
 };//Depth, 
 ViewType viewType = ViewType::Diffuse;//记录当前视图类型
+
+
+glm::vec3 GetRandomColor() {
+
+	// 使用 thread_local 关键字修饰，确保：
+	// 1. 引擎和分布器只初始化一次，保留内部状态，每次调用都会产生新的随机数。
+	// 2. 在多线程环境下是线程安全的。
+	thread_local std::random_device rd;  // 用于获取随机种子的硬件设备
+	thread_local std::mt19937 gen(rd()); // 使用梅森旋转算法的伪随机数生成器
+	thread_local std::uniform_real_distribution<float> dis(0.0f, 1.0f); // 均匀分布在 0 到 1 之间
+
+	// 返回包含三个随机浮点数的 Vec3 结构体
+	return glm::vec3(dis(gen), dis(gen), dis(gen));
+
+}
 
 #define SETBIT1(x, n) ((x) |= (1<<n))	//指定比特位为1，1<<n表示对00000001的二进制左移n位
 #define SETBIT0(x, n) ((x) &= (~(1<<n)))	//指定比特位为0，~(1<<n)表示对00000001的二进制左移n位后，取反
@@ -56,104 +73,253 @@ glm::vec3 GetRGB(MyApp::MyFaceFeature faceFeature, ViewType viewType, bool isMBD
 	{
 		switch (viewType)
 		{
-		case ViewType::MBDType1:
+		case ViewType::Type1:
+// 		{
+// 			unsigned char color_R = 0;
+// 			unsigned char color_G = 0;
+// 			unsigned char color_B = 0;
+// 			double lastGeoAccuracySize = 100000.0;
+// 			double lastDimAccuracySize = 100000.0;
+// 			for (auto annotation : faceFeature.AnnotationArray) {
+// 				//R
+// 				if (annotation.IsGeoTolerance)
+// 					SETBIT1(color_R, 7);
+// 				if (annotation.IsDimTolerance)
+// 					SETBIT1(color_R, 6);
+// 				if (annotation.IsDatum)
+// 					SETBIT1(color_R, 5);
+// 				if (annotation.IsSFSymbol) {
+// 					SETBIT1(color_R, 4);
+// 
+// 					SETBIT0(color_R, 3);
+// 					SETBIT0(color_R, 2);
+// 					SETBIT0(color_R, 1);
+// 					color_R |= (((unsigned char)annotation.AccuracyLevel) << 1);
+// 					//粗糙度精度等级
+// 				}
+// 
+// 				//G
+// 				if (annotation.IsGeoTolerance) {
+// 					if (annotation.AccuracySize <= lastGeoAccuracySize) {
+// 						SETBIT0(color_G, 7);
+// 						SETBIT0(color_G, 6);
+// 						SETBIT0(color_G, 5);
+// 						SETBIT0(color_G, 4);
+// 						color_G |= (((unsigned char)annotation.IsGeoTolerance) << 4);
+// 						lastGeoAccuracySize = annotation.AccuracySize;
+// 					}
+// 				}
+// 				if (annotation.IsDimTolerance) {
+// 					if (annotation.AccuracySize <= lastDimAccuracySize) {
+// 						SETBIT0(color_G, 3);
+// 						SETBIT0(color_G, 2);
+// 						SETBIT0(color_G, 1);
+// 						SETBIT0(color_G, 0);
+// 						color_G |= (unsigned char)annotation.IsDimTolerance;
+// 						lastDimAccuracySize = annotation.AccuracySize;
+// 					}
+// 				}
+// 
+// 				//B
+// 				if (annotation.hasMCM) {
+// 					SETBIT1(color_B, 7);
+// 
+// 					if (annotation.AccuracySize <= lastGeoAccuracySize) {
+// 						SETBIT0(color_B, 6);
+// 						SETBIT0(color_B, 5);
+// 						color_B |= (((unsigned char)annotation.hasMCM) << 5);
+// 						lastGeoAccuracySize = annotation.AccuracySize;
+// 					}
+// 				}
+// 				if (annotation.IsSFSymbol) {
+// 					SETBIT0(color_B, 4);
+// 					SETBIT0(color_B, 3);
+// 					color_B |= (((unsigned char)annotation.IsSFSymbol) << 3);
+// 				}
+// 
+// 			}
+// 			color.x = (float)color_R / 255.0f;
+// 			color.y = (float)color_G / 255.0f;
+// 			color.z = (float)color_B / 255.0f;
+// 			break;
+// 		}
+		case ViewType::Type2:
 		{
 			unsigned char color_R = 0;
 			unsigned char color_G = 0;
 			unsigned char color_B = 0;
-			double lastGeoAccuracySize = 100000.0;
-			double lastDimAccuracySize = 100000.0;
+			//double lastGeoAccuracySize = 100000.0;
+			//double lastDimAccuracySize = 100000.0;
+			//double averageGeoAccuracyLevel = 0.0;
+			std::vector<double> GeoAccuracyLevel;
+			//int geoCount = 0;
+			//double averageDimAccuracyLevel = 0.0;	
+			std::vector<double> DimAccuracyLevel;
+			//int dimCount = 0;
+			double SFSymbolAccuracyLevel = 0.0;
+			bool isDatum = false;
+			bool hasNoMBD = false;
+			int surfaceType = 0;
+
 			for (auto annotation : faceFeature.AnnotationArray) {
-				//R
-				if (annotation.IsGeoTolerance)
-					SETBIT1(color_R, 7);
-				if (annotation.IsDimTolerance)
-					SETBIT1(color_R, 6);
-				if (annotation.IsDatum)
-					SETBIT1(color_R, 5);
-				if (annotation.IsSFSymbol) {
-					SETBIT1(color_R, 4);
-
-					SETBIT0(color_R, 3);
-					SETBIT0(color_R, 2);
-					SETBIT0(color_R, 1);
-					color_R |= (((unsigned char)annotation.AccuracyLevel) << 1);
-					//粗糙度精度等级
-				}
-
-				//G
 				if (annotation.IsGeoTolerance) {
-					if (annotation.AccuracySize <= lastGeoAccuracySize) {
-						SETBIT0(color_G, 7);
-						SETBIT0(color_G, 6);
-						SETBIT0(color_G, 5);
-						SETBIT0(color_G, 4);
-						color_G |= (((unsigned char)annotation.IsGeoTolerance) << 4);
-						lastGeoAccuracySize = annotation.AccuracySize;
-					}
+					//averageGeoAccuracyLevel += annotation.AccuracyLevel;
+					//geoCount++;
+					GeoAccuracyLevel.push_back(annotation.AccuracyLevel);
+					hasNoMBD = false;
 				}
-				if (annotation.IsDimTolerance) {
-					if (annotation.AccuracySize <= lastDimAccuracySize) {
-						SETBIT0(color_G, 3);
-						SETBIT0(color_G, 2);
-						SETBIT0(color_G, 1);
-						SETBIT0(color_G, 0);
-						color_G |= (unsigned char)annotation.IsDimTolerance;
-						lastDimAccuracySize = annotation.AccuracySize;
-					}
+				else if (annotation.IsDimTolerance) {
+					//averageDimAccuracyLevel += annotation.AccuracyLevel;
+					DimAccuracyLevel.push_back(annotation.AccuracyLevel);
+					//dimCount++;
+					hasNoMBD = false;
 				}
-
-				//B
-				if (annotation.hasMCM) {
-					SETBIT1(color_B, 7);
-
-					if (annotation.AccuracySize <= lastGeoAccuracySize) {
-						SETBIT0(color_B, 6);
-						SETBIT0(color_B, 5);
-						color_B |= (((unsigned char)annotation.hasMCM) << 5);
-						lastGeoAccuracySize = annotation.AccuracySize;
-					}
+				else if (annotation.IsSFSymbol) {
+					SFSymbolAccuracyLevel = annotation.AccuracyLevel;
+					hasNoMBD = false;
 				}
-				if (annotation.IsSFSymbol) {
-					SETBIT0(color_B, 4);
-					SETBIT0(color_B, 3);
-					color_B |= (((unsigned char)annotation.IsSFSymbol) << 3);
+				else if (annotation.IsDatum) {
+					isDatum = true;
+					hasNoMBD = false;
 				}
-
+				else if (annotation.Name == "NoMBD") {
+					hasNoMBD = true;
+				}
+				
+				//G
+// 				if (annotation.IsGeoTolerance) {
+// 					if (annotation.AccuracySize <= lastGeoAccuracySize) {
+// 						SETBIT0(color_G, 7);
+// 						SETBIT0(color_G, 6);
+// 						SETBIT0(color_G, 5);
+// 						color_G |= (((unsigned char)annotation.AccuracyLevel) << 5);
+// 						lastGeoAccuracySize = annotation.AccuracySize;
+// 					}
+// 				}
+// 				//B
+// 				if (annotation.IsDimTolerance) {
+// 					color_B = annotation.AccuracySize <= lastDimAccuracySize ? annotation.AccuracyLevel : color_B;
+// 					color_R = 255 - color_B;
+// 					lastDimAccuracySize = annotation.AccuracySize <= lastDimAccuracySize ? annotation.AccuracySize : lastDimAccuracySize;
+// 				}
 			}
+			double averageGeoAccuracyLevel = 0;
+			int geoCount = 0;
+			for (auto geo : GeoAccuracyLevel) {
+				averageGeoAccuracyLevel += geo;
+				geoCount++;
+			}
+			double averageDimAccuracyLevel = 0;
+			int dimCount = 0;
+			for (auto dim : DimAccuracyLevel) {
+				averageDimAccuracyLevel += dim;
+				dimCount++;
+			}
+			averageGeoAccuracyLevel = geoCount > 0 ? (averageGeoAccuracyLevel / geoCount - 1) / 6 : 1.0;
+			averageDimAccuracyLevel = dimCount > 0 ? (averageDimAccuracyLevel / dimCount - 1) / 6 : 1.0;
+			SFSymbolAccuracyLevel = SFSymbolAccuracyLevel < 0.1 ? 1.0 : (SFSymbolAccuracyLevel - 1) / 6;
+			double geoWeight = 0.35, dimWeight = 0.35, SFSWeight = 0.3;
+			double macroLevel = averageGeoAccuracyLevel * geoWeight + averageDimAccuracyLevel * dimWeight;
+			double finalAccuracyLevel = macroLevel + SFSymbolAccuracyLevel * SFSWeight;
+			finalAccuracyLevel = (1.0 - finalAccuracyLevel) * 14 + 1; //15最精细，1最粗糙
+			int finalLevel = finalAccuracyLevel;
+
+			int fine_diff = 0;
+			if ((GeoAccuracyLevel.size() + DimAccuracyLevel.size()) <= 1)
+				fine_diff = 1;  // 完全一致
+			else {
+				double maxAccuracyLevel = 0;
+				double minAccuracyLevel = 16;
+				for (auto dim : DimAccuracyLevel) {
+					maxAccuracyLevel = dim > maxAccuracyLevel? dim : maxAccuracyLevel;
+					minAccuracyLevel = dim < minAccuracyLevel? dim : minAccuracyLevel;
+				}
+				for (auto dim : GeoAccuracyLevel) {
+					maxAccuracyLevel = dim > maxAccuracyLevel? dim : maxAccuracyLevel;
+					minAccuracyLevel = dim < minAccuracyLevel? dim : minAccuracyLevel;
+				}
+				double grade_variance = maxAccuracyLevel - minAccuracyLevel;
+				if (grade_variance < 2)
+					fine_diff = 1;
+				else if (grade_variance <4)
+					fine_diff = 2; 
+				else if (grade_variance < 7)
+					fine_diff = 3;
+				else
+				//进一步判断主导类型
+				{
+					if (averageGeoAccuracyLevel > averageDimAccuracyLevel + 0.2)
+						fine_diff = 4;  // 形位公差主导
+					else if (averageDimAccuracyLevel > averageGeoAccuracyLevel + 0.2)
+						fine_diff = 5;  // 尺寸公差主导
+					else if (SFSymbolAccuracyLevel > macroLevel + 0.2)
+						fine_diff = 6;  // 表面粗糙度突出
+					else
+						fine_diff = 7; //特殊
+				}
+			}
+			
+
+			switch (faceFeature.surfaceType)
+			{
+			case PLANE_TYPE:
+				surfaceType = 3;
+				break;
+			case CYLINDER_TYPE:
+			case CONE_TYPE:
+			case SPHERE_TYPE:
+			case TORUS_TYPE:
+				surfaceType = 2;
+				break;
+			case BSURF_TYPE:
+			case BLEND_TYPE:
+			case SREV_TYPE:
+				surfaceType = 1;
+				break;
+			default:
+				surfaceType = 0;
+				break;
+			}
+
+			SETBIT0(color_R, 7);
+			SETBIT0(color_R, 6);
+			SETBIT0(color_R, 5);
+			SETBIT0(color_R, 4);
+			SETBIT0(color_R, 3);
+			SETBIT0(color_R, 2);
+			SETBIT0(color_R, 1);
+			SETBIT0(color_R, 0);
+
+			color_R |= (((unsigned char)finalLevel) << 4);
+			//color_R |= (((unsigned char)fine_diff) << 1);
+			//if(isDatum) SETBIT1(color_R, 0);
+
+			//if(hasNoMBD) SETBIT1(color_R, 2);
+			//color_R |= (((unsigned char)surfaceType) << 1);
+
+			SETBIT0(color_G, 7);
+			SETBIT0(color_G, 6);
+			SETBIT0(color_G, 5);
+			SETBIT0(color_G, 4);
+			SETBIT0(color_G, 3);
+			SETBIT0(color_G, 2);
+			SETBIT0(color_G, 1);
+			SETBIT0(color_G, 0);
+
+			color_G |= (((unsigned char)fine_diff) << 5);
+			if(isDatum) SETBIT1(color_G, 4);
+
+			//color_G = color_R;
+			color_B = color_R;
+
 			color.x = (float)color_R / 255.0f;
 			color.y = (float)color_G / 255.0f;
 			color.z = (float)color_B / 255.0f;
-			break;
-		}
-		case ViewType::MBDType2:
-		{
-			unsigned char color_R = 0;
-			unsigned char color_G = 0;
-			unsigned char color_B = 0;
-			double lastGeoAccuracySize = 100000.0;
-			double lastDimAccuracySize = 100000.0;
-			for (auto annotation : faceFeature.AnnotationArray) {
-				//G
-				if (annotation.IsGeoTolerance) {
-					if (annotation.AccuracySize <= lastGeoAccuracySize) {
-						SETBIT0(color_G, 7);
-						SETBIT0(color_G, 6);
-						SETBIT0(color_G, 5);
-						color_G |= (((unsigned char)annotation.AccuracyLevel) << 5);
-						lastGeoAccuracySize = annotation.AccuracySize;
-					}
-				}
-				//B
-				if (annotation.IsDimTolerance) {
-					color_B = annotation.AccuracySize <= lastDimAccuracySize ? annotation.AccuracyLevel : color_B;
-					color_R = 255 - color_B;
-					lastDimAccuracySize = annotation.AccuracySize <= lastDimAccuracySize ? annotation.AccuracySize : lastDimAccuracySize;
-				}
-			}
-			color.x = (float)color_R / 255.0f;
-			color.y = (float)color_G / 255.0f;
-			color.z = (float)color_B / 255.0f;
+
+			//临时用随机颜色
+			//color = GetRandomColor();
+
+
 			break;
 		}
 		default:
@@ -163,16 +329,25 @@ glm::vec3 GetRGB(MyApp::MyFaceFeature faceFeature, ViewType viewType, bool isMBD
     return color;
 }
 
-enum class CullMode {
-	CullBack, CullFront
+//enum class CullMode {
+//	CullBack, CullFront
+//};//剔除方法
+//CullMode cullMode = CullMode::CullBack;//记录当前剔除方法
+enum class GSMode {
+	Geometry, Semantic
 };//剔除方法
-CullMode cullMode = CullMode::CullBack;//记录当前剔除方法
+GSMode gsMode = GSMode::Geometry;
 
 enum class MirrorDirection {
 	x, z, None
 };//镜像方向
 MirrorDirection mirrorDirection = MirrorDirection::None;
-glm::vec3 mirrorDir[2] = { glm::vec3(-0.99,0.99,0.99),glm::vec3(0.99,0.99,-0.99) };
+glm::vec3 mirrorDir[2] = { glm::vec3(-1,1,1),glm::vec3(1,1,-1) };
+
+enum class DistributionDirection {
+	None,x, z
+};//分布方向
+DistributionDirection distributionDirection = DistributionDirection::None;
 
 enum class RotateMode {
 	None, Rotate, withoutMainAndSecAxisCorrection, withoutSecondaryAxisCorrection
@@ -180,11 +355,11 @@ enum class RotateMode {
 RotateMode rotateMode = RotateMode::None;
 
 
-
+bool AxisCorrect = true;
 //主轴修正
 int mainAxisCorrectDirIndex = 0;
 glm::vec3 mainAxisCorrectRotateAxis[6] = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f),glm::vec3(1.0f, 0.0f, 0.0f) };
-float mainAxisCorrectRotateAngles[6] = { 90.0f, 90.0f, 90.0f, 90.0f, 90.0f, 0.0f };
+float mainAxisCorrectRotateAngles[6] = { 90.0f, 90.0f, 90.0f, 90.0f, 180.0f, 0.0f };
 
 //次要轴修正
 int secondaryAxisCorrectDirIndex = 0;
@@ -197,15 +372,22 @@ float lastTime = 0;//上一次记录时间
 unsigned int WinWidth = 1440;// 1330;
 unsigned int WinHeight = 900;// 670;
 //渲染显示尺寸
-unsigned int DisplayWidth = 600;
-unsigned int DisplayHeight = 600;
+unsigned int DisplayWidth = 600;//2000
+unsigned int DisplayHeight = 600;//2000
 
 float PictureSize = 50.0f; //正交投影取景范围大小
 
 //照相机位置、前向、上向
-glm::vec3 cameraPos[7] = { glm::vec3(0.0f, 0.0f, PictureSize + 1.0f),  glm::vec3(-PictureSize - 1.0f, 0.0f, 0.0f), glm::vec3(0.0f, PictureSize + 1.0f, 0.0f) , glm::vec3(PictureSize + 1.0f, PictureSize + 1.0f,  PictureSize + 1.0f) / 1.732f, glm::vec3(0.0f, 0.0f, -PictureSize - 1.0f), glm::vec3(PictureSize + 1.0f, 0.0f, 0.0f),  glm::vec3(0.0f, -PictureSize - 1.0f, 0.0f) };
-glm::vec3 cameraFront[7] = { glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(-1.0f, -1.0f, -1.0f),glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f) };
-glm::vec3 cameraUp[7] = { glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f),  glm::vec3(0.0f, 1.0f, 0.0f) ,glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)};
+glm::vec3 cameraPos[7] = { glm::vec3(0.0f, 0.0f, PictureSize + 1.0f),  glm::vec3(-PictureSize - 1.0f, 0.0f, 0.0f), glm::vec3(0.0f, PictureSize + 1.0f, 0.0f) , glm::vec3(0.0f, 0.0f, -PictureSize - 1.0f), glm::vec3(PictureSize + 1.0f, 0.0f, 0.0f),  glm::vec3(0.0f, -PictureSize - 1.0f, 0.0f) ,glm::vec3(PictureSize + 1.0f, PictureSize + 1.0f,  PictureSize + 1.0f) / 1.732f };
+glm::vec3 cameraFront[7] = { glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f),glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(-1.0f, -1.0f, -1.0f) };
+glm::vec3 cameraUp[7] = { glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f) ,glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f),glm::vec3(0.0f, 1.0f, 0.0f) };
+
+glm::vec3 MVCNNcameraPos = glm::vec3(0.0f, (PictureSize + 1.0f) / 2.0f, (PictureSize + 1.0f) / 2.0f * 1.732f);
+glm::vec3 MVCNNcameraFront = glm::vec3(0.0f, -1.0f, -1.732f);
+glm::vec3 MVCNNcameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+glm::vec3 MVCNNcameraPos_now = MVCNNcameraPos;
+glm::vec3 MVCNNcameraFront_now = MVCNNcameraFront;
 
 bool modelLoaded = false;//是否导入了模型
 //bool toRotate = false;//是否旋转模型
@@ -215,8 +397,8 @@ bool modelLoaded = false;//是否导入了模型
 
 bool toTakePictures = false;//是否拍照
 bool lastFileFinished = true;//上一CAD文件是否拍照完成
-#define VIEWCOUNT 12
-#define VIEWDIRCOUNT 3
+#define VIEWCOUNT 24
+#define VIEWDIRCOUNT 6
 #define VIEWTYPECOUNT 2
 #define CULLMODECOUNT 2
 int picturesType[VIEWCOUNT+1][3];//该表存储了每个截图（18张 + 略缩图）对应的模式（方向、类型、剔除）
@@ -226,24 +408,100 @@ std::vector<glm::vec2> convexHull[6];//6个方向的凸包2d坐标
 double convexHullAreaSize[6] = { 0,0,0,0,0,0 };//6个方向的凸包面积
 
 bool toShowConvexHull = false;//是否显示凸包
+bool MVCNN = false;
 
 double xMirrorSize = 0;
 double xDistribution = 0;
 double zMirrorSize = 0;
 double zDistribution = 0;
+double xSize = 0;
+double zSize = 0;
+
 
 std::vector<std::string> ResultCADNameList;
 std::vector<float> ResultSimList;
-std::vector<std::shared_ptr<Texture>> ResultThumbnail(5);
+std::vector<std::shared_ptr<Texture>> ResultThumbnail(11);
 
 bool toRetrivalWithMBD = true;
+float MBDWeight = 0.0;
 
 std::vector<std::shared_ptr<Texture>> MBDViewDatasetTextures(VIEWCOUNT);
-std::vector<std::shared_ptr<Texture>> ResultMBDViewDatasetTextures(VIEWCOUNT*5);
+std::vector<std::shared_ptr<Texture>> ResultMBDViewDatasetTextures(VIEWCOUNT*11);
 
 //数据库模型总数
 int datasetModelCount = 0;
 
+//////////////////////用于比较算法///////////////////////
+struct CADClassAndName {
+	std::string CADClass;
+	std::string CADName;
+};
+std::vector<CADClassAndName> totalCADClassAndNameList;
+bool ShouldAutomatizationForCompare = false;
+int fileIndex = 0;
+
+std::string GetCADClassPath() {
+	return "C:\\Users\\PLY\\Desktop\\Files\\Projects\\SWApp\\SolidWorks Temp\\000Dataset\\";
+}
+
+void GetFiles(std::string path, std::vector<CADClassAndName>& files, std::string className)
+{
+	//文件句柄
+	intptr_t hFile = 0;
+	//文件信息
+	struct _finddata_t fileinfo;
+	std::string p;
+	if ((hFile = _findfirst(p.assign(path).append("*").c_str(), &fileinfo)) != -1)
+	{
+		do
+		{
+			//如果是目录
+			if (fileinfo.attrib & _A_SUBDIR ) {
+				if (strcmp(fileinfo.name, ".") != 0 && strcmp(fileinfo.name, "..") != 0) {
+					GetFiles(path + fileinfo.name + "\\", files, fileinfo.name);//path要加上子目录名
+				}
+			}
+			//如果不是目录或者隐藏文件
+			if (!(fileinfo.attrib & _A_SUBDIR || fileinfo.attrib & _A_HIDDEN))
+			{
+				std::string textstr = fileinfo.name;
+				std::regex pattern("(?=.STL)");	//只保留文件名，不保留后缀
+				std::regex pattern1("(?=.stl)");	//只保留文件名，不保留后缀
+				std::string::const_iterator iter_begin = textstr.cbegin();
+				std::string::const_iterator iter_end = textstr.cend();
+				std::smatch matchResult;
+				if (std::regex_search(iter_begin, iter_end, matchResult, pattern)) {
+					CADClassAndName classAndName;
+					classAndName.CADClass = className;
+					classAndName.CADName = matchResult.prefix();
+					classAndName.CADName.append(".STL");
+					files.push_back(classAndName);
+				}
+				else if(std::regex_search(iter_begin, iter_end, matchResult, pattern1)) {
+					CADClassAndName classAndName;
+					classAndName.CADClass = className;
+					classAndName.CADName = matchResult.prefix();
+					classAndName.CADName.append(".stl");
+					files.push_back(classAndName);
+				}
+
+			}
+		} while (_findnext(hFile, &fileinfo) == 0);
+		_findclose(hFile);
+	}
+}
+
+std::string GetNextToLoadModelName() {
+	if (fileIndex + 1 > totalCADClassAndNameList.size()) {
+		return "";
+	}
+	std::string fileName = totalCADClassAndNameList[fileIndex].CADClass+"\\"+ totalCADClassAndNameList[fileIndex].CADName;
+	fileIndex++;
+	return fileName;
+}
+
+
+/////////////////////////////////////////////////////////////
 
 std::string string_To_UTF8(const std::string& str)
 {
@@ -273,59 +531,60 @@ std::string string_To_UTF8(const std::string& str)
 }
 
 
-#define WIDTHBYTES(bits) (((bits)+31)/32*4)//用于使图像宽度所占字节数为4byte的倍数
-bool PictureResize(unsigned char* pColorDataMid, unsigned char* pColorData, int targetWidth, int targetHeight, int width,int height) {
-	int l_width = WIDTHBYTES(width * 24);//计算位图的实际宽度并确保它为4byte的倍数  
-	int write_width = WIDTHBYTES(targetWidth * 24);//计算写位图的实际宽度并确保它为4byte的倍数
-	for (int hnum = 0; hnum < targetHeight; hnum++) {
-		for (int wnum = 0; wnum < targetWidth; wnum++)
-		{
-			double d_original_img_hnum = hnum * height / (double)targetHeight;
-			double d_original_img_wnum = wnum * width / (double)targetWidth;
-			int i_original_img_hnum = d_original_img_hnum;
-			int i_original_img_wnum = d_original_img_wnum;
-			double distance_to_a_x = d_original_img_wnum - i_original_img_wnum;//在原图像中与a点的水平距离  
-			double distance_to_a_y = d_original_img_hnum - i_original_img_hnum;//在原图像中与a点的垂直距离  
-
-			int original_point_a = i_original_img_hnum * l_width + i_original_img_wnum * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点A    
-			int original_point_b = i_original_img_hnum * l_width + (i_original_img_wnum + 1) * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点B  
-			int original_point_c = (i_original_img_hnum + 1) * l_width + i_original_img_wnum * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点C   
-			int original_point_d = (i_original_img_hnum + 1) * l_width + (i_original_img_wnum + 1) * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点D   
-			if (i_original_img_hnum + 1 >= width)
-			{
-				original_point_c = original_point_a;
-				original_point_d = original_point_b;
-			}
-			if (i_original_img_wnum + 1 >= height)
-			{
-				original_point_b = original_point_a;
-				original_point_d = original_point_c;
-			}
-
-			int pixel_point = hnum * write_width + wnum * 3;//映射尺度变换图像数组位置偏移量  
-			for (int i = 0; i < 3; i++)
-			{
-				pColorDataMid[pixel_point + i] =
-					pColorData[original_point_a + i] * (1 - distance_to_a_x) * (1 - distance_to_a_y) +
-					pColorData[original_point_b + i] * distance_to_a_x * (1 - distance_to_a_y) +
-					pColorData[original_point_c + i] * distance_to_a_y * (1 - distance_to_a_x) +
-					pColorData[original_point_c + i] * distance_to_a_y * distance_to_a_x;
-			}
-
-		}
-	}
-	return true;
-}
+// #define WIDTHBYTES(bits) (((bits)+31)/32*4)//用于使图像宽度所占字节数为4byte的倍数
+// bool PictureResize(unsigned char* pColorDataMid, unsigned char* pColorData, int targetWidth, int targetHeight, int width,int height) {
+// 	int l_width = WIDTHBYTES(width * 24);//计算位图的实际宽度并确保它为4byte的倍数  
+// 	int write_width = WIDTHBYTES(targetWidth * 24);//计算写位图的实际宽度并确保它为4byte的倍数
+// 	for (int hnum = 0; hnum < targetHeight; hnum++) {
+// 		for (int wnum = 0; wnum < targetWidth; wnum++)
+// 		{
+// 			double d_original_img_hnum = hnum * height / (double)targetHeight;
+// 			double d_original_img_wnum = wnum * width / (double)targetWidth;
+// 			int i_original_img_hnum = d_original_img_hnum;
+// 			int i_original_img_wnum = d_original_img_wnum;
+// 			double distance_to_a_x = d_original_img_wnum - i_original_img_wnum;//在原图像中与a点的水平距离  
+// 			double distance_to_a_y = d_original_img_hnum - i_original_img_hnum;//在原图像中与a点的垂直距离  
+// 
+// 			int original_point_a = i_original_img_hnum * l_width + i_original_img_wnum * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点A    
+// 			int original_point_b = i_original_img_hnum * l_width + (i_original_img_wnum + 1) * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点B  
+// 			int original_point_c = (i_original_img_hnum + 1) * l_width + i_original_img_wnum * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点C   
+// 			int original_point_d = (i_original_img_hnum + 1) * l_width + (i_original_img_wnum + 1) * 3;//数组位置偏移量，对应于图像的各像素点RGB的起点,相当于点D   
+// 			if (i_original_img_hnum + 1 >= width)
+// 			{
+// 				original_point_c = original_point_a;
+// 				original_point_d = original_point_b;
+// 			}
+// 			if (i_original_img_wnum + 1 >= height)
+// 			{
+// 				original_point_b = original_point_a;
+// 				original_point_d = original_point_c;
+// 			}
+// 
+// 			int pixel_point = hnum * write_width + wnum * 3;//映射尺度变换图像数组位置偏移量  
+// 			for (int i = 0; i < 3; i++)
+// 			{
+// 				pColorDataMid[pixel_point + i] =
+// 					pColorData[original_point_a + i] * (1 - distance_to_a_x) * (1 - distance_to_a_y) +
+// 					pColorData[original_point_b + i] * distance_to_a_x * (1 - distance_to_a_y) +
+// 					pColorData[original_point_c + i] * distance_to_a_y * (1 - distance_to_a_x) +
+// 					pColorData[original_point_c + i] * distance_to_a_y * distance_to_a_x;
+// 			}
+// 
+// 		}
+// 	}
+// 	return true;
+// }
 
 
 bool TakingPicture(GLuint framebuffer, std::string fileName, std::string filePath) { //截屏并保存
-	unsigned char* picture = new unsigned char[WinWidth * WinHeight * 3];
+	unsigned char* picture = new unsigned char[DisplayWidth * DisplayHeight * 3];
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 	//glBindBuffer(GL_FRAMEBUFFER, framebuffer);
-	glReadPixels(0, 0, WinWidth, WinHeight, GL_BGR, GL_UNSIGNED_BYTE, picture);
+	glReadPixels(0, 0, DisplayWidth, DisplayHeight, GL_BGR, GL_UNSIGNED_BYTE, picture);
 	//WriteBMP(picture, WinWidth, WinHeight);
 
-    std::string name = filePath + fileName + "_" + std::to_string((int)viewDirection) + "_" + std::to_string((int)viewType) + "_" + std::to_string((int)cullMode) + ".bmp";
+	//"_" + std::to_string(App.GetTrianglesCount()) +
+    std::string name = filePath + fileName + "_" + std::to_string((int)viewDirection) + "_" + std::to_string((int)viewType) + "_" + std::to_string((int)gsMode) + ".bmp";
 	FILE* pFile = fopen(name.c_str(), "wb");
 	if (pFile) {	
 		//颜色数据总尺寸：
@@ -352,10 +611,10 @@ bool TakingPicture(GLuint framebuffer, std::string fileName, std::string filePat
 		fwrite(&fileHeader, sizeof(BITMAPFILEHEADER), 1, pFile);
 		fwrite(&bitmapHeader, sizeof(BITMAPINFOHEADER), 1, pFile);
 		//写入颜色数据
-		unsigned char* final_picture = new unsigned char[DisplayWidth * DisplayHeight * 3];
-		PictureResize(final_picture, picture, DisplayWidth, DisplayHeight, WinWidth, WinHeight);
-		fwrite(final_picture, 1, DisplayWidth * DisplayHeight * 3, pFile);
-		fwrite(final_picture, ColorBufferSize, 1, pFile);
+		//unsigned char* final_picture = new unsigned char[DisplayWidth * DisplayHeight * 3];
+		//PictureResize(final_picture, picture, DisplayWidth, DisplayHeight, WinWidth, WinHeight);
+		fwrite(picture, 1, DisplayWidth * DisplayHeight * 3, pFile);
+		fwrite(picture, ColorBufferSize, 1, pFile);
 
 		fclose(pFile);
 
@@ -508,7 +767,7 @@ glm::vec2 GetVertex2D(glm::vec3 p,int i) { //根据投影方向将vec3转vec2
 int MainAxisCorrection(std::unordered_map<std::string, Model>& modelMap) {
 	//1.求6个方向投影后的边界点(x,y)
 	BorderVertexList2D borderVertexList;
-	std::map<VertexKey, int> vlist[6]; //用于查询以避免重复顶点
+	std::unordered_map<VertexKey, int> vlist[6]; //用于查询以避免重复顶点
 	for (auto model : modelMap) {
 		BorderVertexList thisVertexList = model.second.GetBorderVertexList(App.GetMinBoxVertex(), App.GetMaxBoxVertex(),App.GetMassCenter());//获取该面的边界点(x,y,z)
 		for (int i = 0; i < 6; i++) {
@@ -550,7 +809,7 @@ int MainAxisCorrection(std::unordered_map<std::string, Model>& modelMap) {
 
 	//3.确定最大面的方向
 	int maxAreaSizeIndex = -1;
-	int minAreaSizeIndex = -1;
+	int minAreaSizeIndex = 0;
 	double maxAreaSize = 0;
 	double minAreaSize = convexHullAreaSize[0];
 	int maxAreaCount = 0;
@@ -575,11 +834,82 @@ int MainAxisCorrection(std::unordered_map<std::string, Model>& modelMap) {
 	return maxAreaSizeIndex;
 }
 
+///////用于算法比较/////////
+int MainAxisCorrectionforCompare(std::unordered_map<std::string, Model>& modelMap) {
+	//1.求6个方向投影后的边界点(x,y)
+	BorderVertexList2D borderVertexList;
+	std::unordered_map<VertexKey, int> vlist[6]; //用于查询以避免重复顶点
+	for (auto model : modelMap) {
+		BorderVertexList thisVertexList = model.second.GetBorderVertexList(model.second.GetMinBoxForCompare(), model.second.GetMaxBoxForCompare(), model.second.GetMassCenterForCompare());//获取该面的边界点(x,y,z)
+		for (int i = 0; i < 6; i++) {
+			for (auto vertex : thisVertexList.VertexList[i]) {
+				VertexKey vk; //创建map的key，其中元素是glm::vec3。不能直接用glm::vec3作为key，因为需要重载<操作符以比较两个key的大小
+				vk.v = glm::vec3(vertex);
+				if (vlist[i].count(vk) > 0) { //如果顶点重复，跳过
+					continue;
+				}
+				else {
+					vlist[i][vk] = 1; //顶点未重复则记录
+				}
+				borderVertexList.VertexList[i].push_back(GetVertex2D(vertex, i));
+			}
+		}
+	}
+
+	//2.Graham扫描法求凸包和凸包面积
+	for (int i = 0; i < 6; i++) {
+		convexHull[i].clear();
+		int psize = borderVertexList.VertexList[i].size();
+		if (psize > 2) {
+			convexHull[i] = Graham(borderVertexList.VertexList[i], psize);
+		}
+		else {
+			convexHull[i] = borderVertexList.VertexList[i];
+		}
+	}
+	for (int i = 0; i < 6; i++) {
+		double areaSize = 0;
+		int chsize = convexHull[i].size();
+		if (chsize > 2) {
+			for (int j = 1; j < convexHull[i].size() - 1; j++) {
+				areaSize += TriangleAreaSize(convexHull[i][0], convexHull[i][j], convexHull[i][j + 1]);
+			}
+		}
+		convexHullAreaSize[i] = areaSize;
+	}
+
+	//3.确定最大面的方向
+	int maxAreaSizeIndex = -1;
+	int minAreaSizeIndex = 0;
+	double maxAreaSize = 0;
+	double minAreaSize = convexHullAreaSize[0];
+	int maxAreaCount = 0;
+	for (int i = 0; i < 6; i++) {
+		if (maxAreaSize < convexHullAreaSize[i]) {
+			maxAreaSizeIndex = i;
+			maxAreaSize = convexHullAreaSize[i];
+		}
+		if (minAreaSize > convexHullAreaSize[i]) {
+			minAreaSizeIndex = i;
+			minAreaSize = convexHullAreaSize[i];
+		}
+	}
+	for (int i = 0; i < 6; i++) {
+		maxAreaCount = ((maxAreaSize - convexHullAreaSize[i]) < 0.00001 && (maxAreaSize - convexHullAreaSize[i]) > -0.00001) ? (maxAreaCount + 1) : maxAreaCount;
+	}
+	if (maxAreaCount == 3 || maxAreaCount == 5) {
+		int theOtherSide[6] = { 1,0,3,2,5,4 };
+		maxAreaSizeIndex = theOtherSide[minAreaSizeIndex];
+	}
+
+	return maxAreaSizeIndex;
+}
+
 int SecondaryAxisCorrection(std::unordered_map<std::string, Model>& modelMap) {
 	//1.提取出模型主轴修正后的全部顶点
 	std::vector<glm::vec3> vertexList;
-	std::map<VertexKey, int> vlist; //用于查询以避免重复顶点
-	std::map<VertexKey, int> vlist_new; //用于查询以避免重复顶点(变换后)
+	std::unordered_map<VertexKey, int> vlist; //用于查询以避免重复顶点
+	std::unordered_map<VertexKey, int> vlist_new; //用于查询以避免重复顶点(变换后)
 	for (auto model : modelMap) {
 		std::vector<glm::vec3> thisVertexList = model.second.GetVertexList();		
 		for (auto vertex : thisVertexList) {
@@ -602,10 +932,12 @@ int SecondaryAxisCorrection(std::unordered_map<std::string, Model>& modelMap) {
 	//std::vector<glm::vec3> xMirrorVertexList(vertexList);
 	xMirrorSize = 0;
 	xDistribution = 0;
+	xSize = 0;
 	VertexKey vk;
 	for (auto vm : vertexList) {
 		double minDis = 10000000;
 		vk.v = glm::vec3(-vm.x, vm.y, vm.z);
+		xSize = abs(vm.x) > xSize ? abs(vm.x) : xSize;
 		if (vlist_new.count(vk) > 0) {
 			minDis = 0;
 		}
@@ -626,9 +958,11 @@ int SecondaryAxisCorrection(std::unordered_map<std::string, Model>& modelMap) {
 	//2.求出z轴方向的对称度
 	zMirrorSize = 0;
 	zDistribution = 0;
+	zSize = 0;
 	for (auto vm : vertexList) {
 		double minDis = 10000000;
 		vk.v = glm::vec3(vm.x, vm.y, -vm.z);
+		zSize = abs(vm.z) > zSize ? abs(vm.z) : zSize;
 		if (vlist_new.count(vk) > 0) {
 			minDis = 0;
 		}
@@ -649,8 +983,13 @@ int SecondaryAxisCorrection(std::unordered_map<std::string, Model>& modelMap) {
 
 	int result = 0;
 	double gap = xMirrorSize - zMirrorSize;
-	if (gap < 0.01 && gap > -0.01) {
-		result = 0;
+	if (gap < 100.0f && gap > -100.0f) {
+		if (zSize > xSize) {
+			result = xDistribution > 0 ? 2 : 3;
+		}
+		else {
+			result = zDistribution > 0 ? 0 : 1;
+		}
 	}
 	else {
 		if (xMirrorSize < zMirrorSize) {
@@ -658,7 +997,7 @@ int SecondaryAxisCorrection(std::unordered_map<std::string, Model>& modelMap) {
 		}
 		else {
 			result = xDistribution > 0 ? 2 : 3;
-		}
+		}			
 	}
 	
 	return result;
@@ -669,6 +1008,7 @@ void LoadModel(std::unordered_map<std::string, Model>& modelMap, std::unordered_
 	float minScale = 1e10;
 	float thisScale = 1e10;
 	modelMap.clear();
+	int trianglesCount = 0;
 	for (auto face : faceMap) {
 		std::string fileName = face.first + ".STL";
 		std::string filePath = App.GetExportPathUtf8();
@@ -679,7 +1019,12 @@ void LoadModel(std::unordered_map<std::string, Model>& modelMap, std::unordered_
 		thisScale = model.GetNormalizeScale(App.GetMassCenter());//求出每个面模型的缩放尺寸
 		minScale = thisScale < minScale ? thisScale : minScale;//得到最小的缩放尺寸   
 
+		for (auto mesh : model.meshes) {
+			trianglesCount += (mesh.indices.size() / 3);
+		}
 	}
+
+	App.SetTrianglesCount(trianglesCount);
 
 	//主轴修正
 	mainAxisCorrectDirIndex = MainAxisCorrection(modelMap);
@@ -710,6 +1055,67 @@ void LoadModel(std::unordered_map<std::string, Model>& modelMap, std::unordered_
 	modelLoaded = modelMap.size() > 0;
 }
 
+////////////////////////用于比较算法///////////////////////
+//加载模型
+void LoadModelForCompare(std::unordered_map<std::string, Model>& modelMap, std::unordered_map<std::string, InstanceBuffer>& instanceMap) {
+	float minScale = 1e10;
+	float thisScale = 1e10;
+	modelMap.clear();
+	glm::vec3 massCenter;
+	int trianglesCount = 0;
+	for (auto face : faceMap) {
+		std::string fileName = face.second.Name;
+		std::string filePath = GetCADClassPath();
+		Model model((filePath + fileName), App.angleList);//读取文件
+		modelMap["NoMBDFace"] = model;
+
+		//尺寸归一化
+		massCenter = model.GetMassCenterForCompare();
+		thisScale = model.GetNormalizeScale(massCenter);//求出每个面模型的缩放尺寸
+		minScale = thisScale < minScale ? thisScale : minScale;//得到最小的缩放尺寸   
+
+		for (auto mesh : model.meshes) {
+			trianglesCount += (mesh.indices.size() / 3);
+		}
+	}
+
+	App.SetTrianglesCount(trianglesCount);
+
+	//主轴修正
+	mainAxisCorrectDirIndex = MainAxisCorrectionforCompare(modelMap);
+	for (auto model : modelMap) {
+		//将最大面方向作为y轴反方向	
+		if(AxisCorrect)
+			modelMap[model.first].SetModelMatrixRotation(glm::radians(mainAxisCorrectRotateAngles[mainAxisCorrectDirIndex]), mainAxisCorrectRotateAxis[mainAxisCorrectDirIndex]);
+		modelMap[model.first].SetModelMatrixScale(glm::vec3(minScale)); //尺寸归一化
+		modelMap[model.first].SetModelMatrixPosition(-model.second.GetMassCenterForCompare()); //以质心置中 
+		modelMap[model.first].SetDefaultModelMatrix(); //设定默认Model矩阵
+	}
+	//
+	////次要轴修正
+	if (AxisCorrect)
+	{
+		secondaryAxisCorrectDirIndex = SecondaryAxisCorrection(modelMap);
+		for (auto model : modelMap) {
+			modelMap[model.first].SetModelMatrix(modelMap[model.first].GetModelMatrix() * glm::inverse(modelMap[model.first].GetDefaultModelMatrix()));
+			modelMap[model.first].SetModelMatrixRotation(glm::radians(secondaryAxisCorrectRotateAngles[secondaryAxisCorrectDirIndex]), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelMap[model.first].SetModelMatrix(modelMap[model.first].GetModelMatrix() * modelMap[model.first].GetDefaultModelMatrix());
+			modelMap[model.first].SetDefaultModelMatrix(); //设定默认Model矩阵
+		}
+	}
+	
+	
+	//创建实例
+	instanceMap.clear();
+	for (auto model : modelMap) {
+		InstanceBuffer instance(sizeof(glm::mat4), &model.second.GetModelMatrix());
+		instance.AddInstanceBuffermat4(model.second.meshes[0].vaID, 3);
+		instanceMap[model.first] = instance;
+	}
+	modelLoaded = modelMap.size() > 0;
+}
+
+
 void LoadConvexHullModel(std::vector<Model>& convexHullModelList, std::vector<InstanceBuffer>& convexHullInstanceList, std::vector<glm::vec2>* vertexList, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex) {
 	convexHullModelList.clear();
 	convexHullInstanceList.clear();
@@ -738,7 +1144,7 @@ PyObject* pythonImportModule(const char* pyDir, const char* name) {
 	return module;
 }
 
-int callPythonFun_s_i_i(PyObject* module, const char* a, int b, int c) {
+int callPythonFun_s_i_i(PyObject* module, const char* a, int b, int c, float d) {
 	//获取模块字典属性
 	PyObject* pDict = PyModule_GetDict(module);
 	if (pDict == nullptr) {
@@ -752,10 +1158,11 @@ int callPythonFun_s_i_i(PyObject* module, const char* a, int b, int c) {
 	}
 
 	// 构造python 函数入参， 接收2
-	PyObject* pArgs = PyTuple_New(3);
+	PyObject* pArgs = PyTuple_New(4);
 	PyTuple_SetItem(pArgs, 0, Py_BuildValue("s", a));
 	PyTuple_SetItem(pArgs, 1, Py_BuildValue("i", b));
 	PyTuple_SetItem(pArgs, 2, Py_BuildValue("i", c));
+	PyTuple_SetItem(pArgs, 3, Py_BuildValue("d", d));
 
 	//调用函数，并得到 python 类型的返回值
 	PyObject* result = PyEval_CallObject(pFunc, pArgs);
@@ -865,10 +1272,10 @@ bool ReadResults() {
 		}
 		else {
 			if (line.back() == ',') {
-				ResultCADNameList.push_back(line.substr(1, line.size() - 8));
+				ResultCADNameList.push_back(line.substr(1, line.size() - 13));
 			}
 			else {
-				ResultCADNameList.push_back(line.substr(1, line.size() - 7));
+				ResultCADNameList.push_back(line.substr(1, line.size() - 12));
 			}
 		}
 	}
@@ -899,7 +1306,7 @@ bool ReadResults() {
 	if (ResultCADNameList.size() > 0) {
 		for (int i = 0; i < ResultCADNameList.size(); i++)
 		{
-			ResultThumbnail[i].reset(new Texture(App.GetModelPictureExportPath() + ResultCADNameList[i] + "_.bmp"));
+			ResultThumbnail[i].reset(new Texture(App.GetModelPictureExportPath() + ResultCADNameList[i] + "_6_2_0.bmp"));
 			LoadFileInDatasetForResult(App.GetPictureExportPath(true), ResultCADNameList[i], i);
 		}
 		return true;
@@ -937,7 +1344,7 @@ int GetModelCountInDataset(std::string path)
 bool Retrival() {
 	int result = 0;
 	if (datasetModelCount == GetModelCountInDataset(App.GetPictureExportPath(true))/VIEWCOUNT) {
-		result = callPythonFun_s_i_i(pModule_predict, App.GetCADNameUtf8().c_str(), (int)toRetrivalWithMBD, datasetModelCount);
+		result = callPythonFun_s_i_i(pModule_predict, App.GetCADNameUtf8().c_str(), (int)toRetrivalWithMBD, datasetModelCount, MBDWeight);
 	}
 	else {
 		return false;
@@ -1089,11 +1496,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	//glfw初始化
     if (!glfwInit())
         return 1;
-    const char* glsl_version = "#version 130";
+    const char* glsl_version = "#version 330";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_SAMPLES, 8);//设置MSAAx8
-    glEnable(GL_MULTISAMPLE);//开启MSAA
+    //glfwWindowHint(GLFW_SAMPLES, 8);//设置MSAAx8
+    //glEnable(GL_MULTISAMPLE);//开启MSAA
 
     //创建窗口上下文
     GLFWwindow* window = glfwCreateWindow(WinWidth, WinHeight, "SWApp", nullptr, nullptr);
@@ -1251,16 +1658,37 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	symmetryShader.Bind();
 	symmetryShader.Unbind();
 
-	FrameBuffer display(WinWidth, WinHeight);
+	Shader originShader("res/shaders/Origin.shader");
+	originShader.Bind();
+	originShader.Unbind();
+
+	FrameBuffer display(DisplayWidth, DisplayHeight);
 	display.GenTexture2D();
 
-	FrameBuffer depth_R(WinWidth, WinHeight);
-	depth_R.GenTexture2D();
+	FrameBuffer depth_R(DisplayWidth, DisplayHeight);
+	depth_R.GenTexture2DShadowMap();
+
+	FrameBuffer depth(DisplayWidth, DisplayHeight);
+	depth.GenTexture2DShadowMap();
+
+	FrameBuffer depth_R_CullF(DisplayWidth, DisplayHeight);
+	depth_R_CullF.GenTexture2DShadowMap();
+
+	FrameBuffer depth_CullF(DisplayWidth, DisplayHeight);
+	depth_CullF.GenTexture2DShadowMap();
+
+	//创建帧缓冲MSAA
+	FrameBuffer framebufferMSAA(DisplayWidth, DisplayHeight);
+	framebufferMSAA.GenTexture2DMultiSample(1);
 
 	std::shared_ptr<Texture> thumbnail;
 	std::vector<std::shared_ptr<Texture>> MBDViews;
 
 	bool shouldAutomatizationForOneModel = false;
+
+	//坐标轴
+	Origin origin(originShader);
+	bool showOrigin = false;
 
 	//渲染方面的API
 	Renderer renderer;
@@ -1272,6 +1700,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 	shaderIDs.push_back(convexHullShader.RendererID);
 	shaderIDs.push_back(depthShader.RendererID);
 	shaderIDs.push_back(symmetryShader.RendererID);
+	shaderIDs.push_back(originShader.RendererID);
     ubo.Bind(shaderIDs, "Matrices");
 
     //初始化截图模式表
@@ -1294,6 +1723,41 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     //主循环
     while (!glfwWindowShouldClose(window))
     {
+		if (ShouldAutomatizationForCompare && lastFileFinished) {
+			rotateMode = RotateMode::None;
+			toShowConvexHull = false;
+			std::string name = GetNextToLoadModelName();
+			if (name != "") {
+				App.SetCADName(name);
+				//加载全部数据
+				MyApp::MyFaceFeature noMBDFace;
+				noMBDFace.AnnotationCount = 0;
+				noMBDFace.Name = name;
+				//noMBDFace.AppliedFaceNameBSTR = noMBDFaceName;
+				MyApp::MyAnnotation noMBDAnnotation;
+				noMBDAnnotation.Name = "NoMBD";
+				noMBDFace.AnnotationArray.push_back(noMBDAnnotation);
+				faceMap["NoMBDFace"] = noMBDFace;
+				App.SetFaceMap(faceMap);
+				App.SetTrianglesCount(0);
+				//加载模型
+				LoadModelForCompare(modelMap, instanceMap);
+				LoadConvexHullModel(convexHullModelList, convexHullInstanceList, convexHull, modelMap["NoMBDFace"].GetMinBoxForCompare(), modelMap["NoMBDFace"].GetMaxBoxForCompare());
+				//准许拍照
+				toTakePictures = true;
+				pictureIndex = 0;
+				lastFileFinished = false;
+					
+				for (auto state : swStateMap) {
+					swStateMap[state.first] = MyApp::MyState::Succeed;
+				}
+				App.SetSWStateMap(swStateMap);
+			}
+			else {
+				ShouldAutomatizationForCompare = false;//如果文件读取完毕就停止自动化
+				//datasetModelCount = BuildDataset();//运行BuildDataset.py
+			}
+		}
 
         if (App.ShouldAutomatization() && lastFileFinished) {     //自动化读取文件
 			rotateMode = RotateMode::None;
@@ -1312,7 +1776,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 					pictureIndex = 0;
 					lastFileFinished = false;
 					//4.保存略缩图
-					SaveThumbnail(App.GetModelPictureExportPath());
+					//SaveThumbnail(App.GetModelPictureExportPath());
 				}
 				if (!result) {
 					toTakePictures = false;
@@ -1343,7 +1807,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 				pictureIndex = 0;
 				lastFileFinished = false;
 				//3.保存略缩图
-				SaveThumbnail(App.GetModelPictureExportPath());
+				//SaveThumbnail(App.GetModelPictureExportPath());
 			}
 			else {
 				toTakePictures = false;
@@ -1355,28 +1819,60 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
 		//设定拍照模式
 		if (toTakePictures) {
-			if (pictureIndex > VIEWCOUNT - 1) {
-				isMBDView = false;
-			}
-			if (pictureIndex < VIEWCOUNT*2) {
-				int index = pictureIndex % VIEWCOUNT;
-				viewDirection = (ViewDirection)(picturesType[index][0]);
-				viewType = (ViewType)(picturesType[index][1]);
-				cullMode = (CullMode)(picturesType[index][2]);
-			}
-			else if (pictureIndex == VIEWCOUNT * 2) {
-				viewDirection = (ViewDirection)(picturesType[VIEWCOUNT][0]);
-				viewType = (ViewType)(picturesType[VIEWCOUNT][1]);
-				cullMode = (CullMode)(picturesType[VIEWCOUNT][2]);
+			if (MVCNN) {
+				if (pictureIndex < VIEWCOUNT) {
+					glm::mat4 cameraPosModelMatrix = glm::mat4(1);
+					cameraPosModelMatrix = glm::rotate(cameraPosModelMatrix, glm::radians(30.0f* pictureIndex), glm::vec3(0.0f, 1.0f, 0.0f));
+					MVCNNcameraPos_now = glm::vec3(cameraPosModelMatrix * glm::vec4(MVCNNcameraPos, 1.0f));
+					MVCNNcameraFront_now = glm::vec3(cameraPosModelMatrix * glm::vec4(MVCNNcameraFront, 0.0f));
+					viewDirection = (ViewDirection)(picturesType[pictureIndex][0]);
+					viewType = (ViewType)(picturesType[pictureIndex][1]);
+					gsMode = (GSMode)(picturesType[pictureIndex][2]);
+				}
+				else if (pictureIndex == VIEWCOUNT) {
+					viewDirection = (ViewDirection)(picturesType[VIEWCOUNT][0]);
+					viewType = (ViewType)(picturesType[VIEWCOUNT][1]);
+					gsMode = (GSMode)(picturesType[VIEWCOUNT][2]);
+				}
+				else {
+					toTakePictures = false;
+					isMBDView = true;
+					lastFileFinished = true;//18张截图拍完后说明要换下一CAD文件
+					std::string modelPicturePathStr = App.GetModelPictureExportPath() + App.GetCADName() + "_6_2_0.bmp";
+					thumbnail.reset(new Texture(modelPicturePathStr));
+					hasMBDViewDataset = LoadFileInDataset(App.GetPictureExportPath(true), App.GetCADName());
+					if (shouldAutomatizationForOneModel) {
+						//datasetModelCount = BuildDataset();//运行BuildDataset.py
+						shouldAutomatizationForOneModel = false;
+					}
+				}
 			}
 			else {
-				toTakePictures = false;
-				isMBDView = true;
-				lastFileFinished = true;//18张截图拍完后说明要换下一CAD文件
-				hasMBDViewDataset = LoadFileInDataset(App.GetPictureExportPath(true), App.GetCADName());
-				if (shouldAutomatizationForOneModel) {
-					datasetModelCount = BuildDataset();//运行BuildDataset.py
-					shouldAutomatizationForOneModel = false;
+				if (pictureIndex > VIEWCOUNT - 1) {
+					isMBDView = false;
+				}
+				if (pictureIndex < VIEWCOUNT * 2) {
+					int index = pictureIndex % VIEWCOUNT;
+					viewDirection = (ViewDirection)(picturesType[index][0]);
+					viewType = (ViewType)(picturesType[index][1]);
+					gsMode = (GSMode)(picturesType[index][2]);
+				}
+				else if (pictureIndex == VIEWCOUNT * 2) {
+					viewDirection = (ViewDirection)(picturesType[VIEWCOUNT][0]);
+					viewType = (ViewType)(picturesType[VIEWCOUNT][1]);
+					gsMode = (GSMode)(picturesType[VIEWCOUNT][2]);
+				}
+				else {
+					toTakePictures = false;
+					isMBDView = true;
+					lastFileFinished = true;//18张截图拍完后说明要换下一CAD文件
+					std::string modelPicturePathStr = App.GetModelPictureExportPath() + App.GetCADName() + "_6_2_0.bmp";
+					thumbnail.reset(new Texture(modelPicturePathStr));
+					hasMBDViewDataset = LoadFileInDataset(App.GetPictureExportPath(true), App.GetCADName());
+					if (shouldAutomatizationForOneModel) {
+						//datasetModelCount = BuildDataset();//运行BuildDataset.py
+						shouldAutomatizationForOneModel = false;
+					}
 				}
 			}
 		}
@@ -1409,8 +1905,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		cameraPos[2] = glm::vec3(0.0f, PictureSize + 1.0f, 0.0f);
 
 		//设置变换矩阵			
-		//modelMatrix = glm::rotate(modelMatrix, deltaTime * glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f));//旋转		
-		viewMatrix = glm::lookAt(cameraPos[(int)viewDirection], cameraPos[(int)viewDirection] + cameraFront[(int)viewDirection], cameraUp[(int)viewDirection]);
+		//modelMatrix = glm::rotate(modelMatrix, deltaTime * glm::radians(50.0f), glm::vec3(0.0f, 1.0f, 0.0f));//旋转	
+		if (MVCNN && pictureIndex != VIEWCOUNT) {
+			viewMatrix = glm::lookAt(MVCNNcameraPos_now, MVCNNcameraPos_now + MVCNNcameraFront_now, MVCNNcameraUp);
+		}
+		else
+		{
+			viewMatrix = glm::lookAt(cameraPos[(int)viewDirection], cameraPos[(int)viewDirection] + cameraFront[(int)viewDirection], cameraUp[(int)viewDirection]);
+		}
 		projectionMatrix = glm::ortho(-PictureSize, PictureSize, -PictureSize, PictureSize, 0.1f, PictureSize * 2.0f);
 
 		//将model矩阵数组填入实例哈希表
@@ -1475,6 +1977,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		ubo.SetDatamat4(0, sizeof(glm::mat4), &viewMatrix);
 		ubo.SetDatamat4(sizeof(glm::mat4), sizeof(glm::mat4), &projectionMatrix);
 
+
+		glViewport(0, 0, DisplayWidth, DisplayHeight);
 		//pass0
 		depth_R.Bind();//framebuffer
 		glEnable(GL_DEPTH_TEST);
@@ -1484,7 +1988,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		renderer.ClearDepth();
 		
 		glDisable(GL_CULL_FACE);
-
+		//renderer.CullFace((int)CullMode::CullBack);
 		depthShader.Bind();
 		if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
 			for (auto model : modelMap) {
@@ -1494,22 +1998,77 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		depthShader.Unbind();
 		depth_R.Unbind();
 
-		//pass1
-		
-		display.Bind();//framebuffer
+		depth_R_CullF.Bind();//framebuffer
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_GREATER);
+		renderer.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearDepth(0.0);
+		renderer.ClearDepth();
+
+		renderer.CullFace(0);//(int)CullMode::CullBack);
+
+		depthShader.Bind();
+		if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
+			for (auto model : modelMap) {
+				model.second.DrawInstanced(depthShader, 1);
+			}
+		}
+		depthShader.Unbind();
+		depth_R_CullF.Unbind();
+
+		depth_CullF.Bind();//framebuffer
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
 		renderer.ClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClearDepth(1.0);
 		renderer.ClearDepth();
+
+		renderer.CullFace(1);// (int)CullMode::CullFront);
+
+		depthShader.Bind();
+		if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
+			for (auto model : modelMap) {
+				model.second.DrawInstanced(depthShader, 1);
+			}
+		}
+		depthShader.Unbind();
+		depth_CullF.Unbind();
+
+		depth.Bind();//framebuffer
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+		renderer.ClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearDepth(1.0);
+		renderer.ClearDepth();
+
+		glDisable(GL_CULL_FACE);
+		depthShader.Bind();
+		if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
+			for (auto model : modelMap) {
+				model.second.DrawInstanced(depthShader, 1);
+			}
+		}
+		depthShader.Unbind();
+		depth.Unbind();
+
+
+		//pass1
 		
-		//if (viewType == ViewType::Depth) {
-		//	glDisable(GL_CULL_FACE);
-		//}
-		//else {
+		//display.Bind();//framebuffer
+		framebufferMSAA.Bind();
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+		if(MVCNN)
+			renderer.ClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		else
+			renderer.ClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearDepth(1.0);
+		renderer.ClearDepth();
+		
+		//if(MVCNN)
+		//	renderer.CullFace((int)CullMode::CullBack);	
+		//else
 		//	renderer.CullFace((int)cullMode);
-		//}	
-		renderer.CullFace((int)cullMode);	
 
 		shader.Bind();
 		if (swStateMap[MyApp::SWState::ModelLoaded] == MyApp::MyState::Succeed) {
@@ -1517,12 +2076,26 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
                 //ViewType tempViewType = isMBDView ? viewType : ViewType::Diffuse;
                 glm::vec3 MBDColor = GetRGB(faceMap[model.first], viewType, isMBDView);
                 shader.SetUniform3f("MBDColor", MBDColor.x, MBDColor.y, MBDColor.z);
+                shader.SetUniform1i("isMBDView", (int)isMBDView);
                 shader.SetUniform1i("viewType", (int)viewType);
+                shader.SetUniform1i("gsMode", (int)gsMode);
 				glActiveTexture(GL_TEXTURE5);
 				glBindTexture(GL_TEXTURE_2D, depth_R.GetTexID());
 				shader.SetUniform1i("depth_R_map", 5);
-				shader.SetUniform1f("WinWidth", WinWidth);
-				shader.SetUniform1f("WinHeight", WinHeight);
+				glActiveTexture(GL_TEXTURE6);
+				glBindTexture(GL_TEXTURE_2D, depth_R_CullF.GetTexID());
+				shader.SetUniform1i("depth_R_CullF_map", 6);	
+				glActiveTexture(GL_TEXTURE7);
+				glBindTexture(GL_TEXTURE_2D, depth_CullF.GetTexID());
+				shader.SetUniform1i("depth_CullF_map", 7);	
+				glActiveTexture(GL_TEXTURE8);
+				glBindTexture(GL_TEXTURE_2D, depth.GetTexID());
+				shader.SetUniform1i("depth_map", 8);	
+				shader.SetUniform1i("distributionDirection", (int)distributionDirection);
+				shader.SetUniform1i("xDistribution", xDistribution>0);
+				shader.SetUniform1i("zDistribution", zDistribution>0);
+				shader.SetUniform1f("WinWidth", DisplayWidth);
+				shader.SetUniform1f("WinHeight", DisplayHeight);
 				model.second.DrawInstanced(shader, 1);
 			}
 		}
@@ -1562,7 +2135,18 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			convexHullShader.Unbind();
 			glDisable(GL_BLEND);
 		}
+		
+		//坐标轴
+		if(showOrigin){
+			//glDisable(GL_DEPTH_TEST);
+			origin.Draw();
+			//glEnable(GL_DEPTH_TEST);
+		}
+
+		//display.Unbind();//framebuffer
+		display.GetColorAfterMSAA(framebufferMSAA.GetID());//从抗锯齿帧缓冲获取颜色到其他缓冲
 		display.Unbind();//framebuffer
+		glViewport(0, 0, WinWidth, WinHeight);
 
         //2.渲染ImGui界面
         ImGui_ImplOpenGL3_NewFrame();
@@ -1599,27 +2183,33 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		//视图类型
 		//ImGui::RadioButton("深度", (int*)&viewType, (int)ViewType::Depth);
 		//ImGui::SameLine();
-		ImGui::RadioButton("MBD视图1", (int*)&viewType, (int)ViewType::MBDType1);
+		ImGui::RadioButton("视图1", (int*)&viewType, (int)ViewType::Type1);
 		ImGui::SameLine();
-		ImGui::RadioButton("MBD视图2", (int*)&viewType, (int)ViewType::MBDType2);
+		ImGui::RadioButton("视图2", (int*)&viewType, (int)ViewType::Type2);
 		ImGui::SameLine();
 		ImGui::RadioButton("漫反射", (int*)&viewType, (int)ViewType::Diffuse);
-		ImGui::SameLine();
-		ImGui::RadioButton("厚度图", (int*)&viewType, (int)ViewType::Depth);
+		//ImGui::SameLine();
+		//ImGui::RadioButton("厚度图", (int*)&viewType, (int)ViewType::Depth);
 		ImGui::Separator();
 		//剔除模式选择
-		ImGui::RadioButton("剔除反面", (int*)&cullMode, (int)CullMode::CullBack);
+		ImGui::RadioButton("几何视图", (int*)&gsMode, (int)GSMode::Geometry);
 		ImGui::SameLine();
-		ImGui::RadioButton("剔除正面", (int*)&cullMode, (int)CullMode::CullFront);
+		ImGui::RadioButton("语义视图", (int*)&gsMode, (int)GSMode::Semantic);
 		ImGui::Separator();
 		ImGui::End();		
 
         ImGui::Begin("Debug");
         //获取OpenGL错误信息	
 		ImGui::Text(("OpenGL: " + std::to_string(GLCheckError())).c_str());
+		ImGui::Checkbox("坐标轴", &showOrigin);
         //截图
 		if (ImGui::Button("保存视图")) {
 			TakingPicture(display.GetTexID(), App.GetCADName(), App.GetExportPath());
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("保存略缩图")) {
+			//保存略缩图
+			SaveThumbnail(App.GetCADTempPath());
 		}
 		//视图大小
 		ImGui::DragFloat("视图范围", &PictureSize);
@@ -1644,24 +2234,47 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 		ImGui::SameLine();
 		ImGui::RadioButton("z轴对称", (int*)&mirrorDirection, (int)MirrorDirection::z);
 
+		//绘制分布方向
+		ImGui::RadioButton("不绘制分布", (int*)&distributionDirection, (int)DistributionDirection::None);
+		ImGui::SameLine();
+		ImGui::RadioButton("x轴分布方向", (int*)&distributionDirection, (int)DistributionDirection::x);
+		ImGui::SameLine();
+		ImGui::RadioButton("z轴分布方向", (int*)&distributionDirection, (int)DistributionDirection::z);
+
 		//对称度
 		ImGui::Text("x轴对称度=%f", xMirrorSize);
 		ImGui::Text("x轴顶点分布=%f", xDistribution);
 		ImGui::Text("z轴对称度=%f", zMirrorSize);
 		ImGui::Text("z轴顶点分布=%f", zDistribution);
+		ImGui::Text("x轴顶点最大值=%f", xSize);
+		ImGui::Text("z轴顶点最大值=%f", zSize);
 
 		ImGui::RadioButton("主次轴未修正", (int*)&rotateMode, (int)RotateMode::withoutMainAndSecAxisCorrection);
 		ImGui::SameLine();
 		ImGui::RadioButton("次轴未修正", (int*)&rotateMode, (int)RotateMode::withoutSecondaryAxisCorrection);
 
-		ImGui::InputFloat3("初始姿态角度xyz", App.angleList, "%.0f");
+		ImGui::InputFloat3("初始姿态角度xyz", App.angleList, "%.2f");
+
+		if (ImGui::Button("自动化采集视图(用于算法比较)")) {
+			totalCADClassAndNameList.clear();
+			GetFiles(GetCADClassPath(), totalCADClassAndNameList,"");
+			App.ClearFiles(App.GetPictureExportPath(true));
+			App.ClearFiles(App.GetPictureExportPath(false));
+			App.ClearFiles(App.GetModelPictureExportPath());
+			ShouldAutomatizationForCompare = true;
+			lastFileFinished = true;
+			fileIndex = 0;
+		}
+		ImGui::Checkbox("MVCNN?", &MVCNN);
+		ImGui::Checkbox("主轴修正?", &AxisCorrect);
 
 		ImGui::End();
 
 		ImGui::Begin("三维检索");
 		//加载略缩图
 		if (App.ShouldLoadThumbnail()) {
-			std::string modelPicturePathStr = SaveThumbnail(App.GetCADTempPath());
+			//std::string modelPicturePathStr = SaveThumbnail(App.GetCADTempPath());
+			std::string modelPicturePathStr = App.GetModelPictureExportPath() + App.GetCADName() + "_6_2_0.bmp";
 			thumbnail.reset(new Texture(modelPicturePathStr));
 			hasMBDViewDataset = LoadFileInDataset(App.GetPictureExportPath(true), App.GetCADName());
 			App.StopLoadThumbnail();
@@ -1671,8 +2284,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			ImGui::SameLine();
 			ImGui::Text(App.GetCADNameUtf8().c_str());
 			ImGui::SameLine();		
-			if (ImGui::Button("加入模型特征库")) {
+			if (ImGui::Button("采集视图")) {
 				shouldAutomatizationForOneModel = true;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("加入特征库")) {
+				datasetModelCount = BuildDataset();//运行BuildDataset.py
 			}
 			ImGui::SameLine();
 			if (hasMBDViewDataset) {
@@ -1681,14 +2298,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			else {
 				ImGui::Text("未加入");
 			}
-			ImGui::Image((GLuint*)thumbnail->GetID(), ImVec2(thumbnail->GetWidth() / 20.0f, thumbnail->GetHeight() / 20.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
+			ImGui::Image((GLuint*)thumbnail->GetID(), ImVec2(150.0f, 150.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.5f));//ImVec2(thumbnail->GetWidth() / 20.0f, thumbnail->GetHeight() / 20.0f)
 			if(hasMBDViewDataset)
 			{
 				ImGui::SameLine();
 				ImGui::BeginGroup();
 				ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
 				for (int i = 0; i < VIEWCOUNT; i++) {
-					ImGui::Image((GLuint*)MBDViewDatasetTextures[i]->GetID(), ImVec2(thumbnail->GetHeight() / 60.0f, thumbnail->GetHeight() / 60.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+					ImGui::Image((GLuint*)MBDViewDatasetTextures[i]->GetID(), ImVec2(50.0f, 50.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 					if ((i + 1) % (VIEWCOUNT / 3) == 0) {
 						continue;
 					}
@@ -1703,6 +2320,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 			}
 			ImGui::SameLine();
 			ImGui::Checkbox("含MBD语义?", &toRetrivalWithMBD);
+			ImGui::DragFloat("MBD权重", &MBDWeight, 0.1f, 0.0f, 1.0f, "%.1f", ImGuiSliderFlags_AlwaysClamp);
 			if (retrivalSucessful) {
 				ImGui::Separator();
 				for (int i = 0; i < ResultCADNameList.size(); i++) {
@@ -1715,12 +2333,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 					ImGui::Text(string_To_UTF8(ResultCADNameList[i]).c_str());
 					ImGui::SameLine();
 					ImGui::Text("相似度:%.2f％", ResultSimList[i] * 100.0f);
-					ImGui::Image((GLuint*)ResultThumbnail[i]->GetID(), ImVec2(ResultThumbnail[i]->GetWidth() / 20.0f, ResultThumbnail[i]->GetHeight() / 20.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.5f));				
+					ImGui::Image((GLuint*)ResultThumbnail[i]->GetID(), ImVec2(150.0f, 150.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.5f));
 					ImGui::SameLine();
 					ImGui::BeginGroup();
 					ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(1.0f, 1.0f));
 					for (int j = 0; j < VIEWCOUNT; j++) {
-						ImGui::Image((GLuint*)ResultMBDViewDatasetTextures[j+i*VIEWCOUNT]->GetID(), ImVec2(thumbnail->GetHeight() / 60.0f, thumbnail->GetHeight() / 60.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+						ImGui::Image((GLuint*)ResultMBDViewDatasetTextures[j+i*VIEWCOUNT]->GetID(), ImVec2(50.0f, 50.0f), ImVec2(0, 0), ImVec2(1, 1), ImVec4(1.0f, 1.0f, 1.0f, 1.0f), ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 						if ((j + 1) % (VIEWCOUNT / 3) == 0) {
 							continue;
 						}
@@ -1759,12 +2377,23 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         glfwSwapBuffers(window);
 
         if(toTakePictures) { //一帧结束后对该帧截图
-            if (pictureIndex < VIEWCOUNT * 2) {
-                TakingPicture(display.GetTexID(), App.GetCADName(), App.GetPictureExportPath(isMBDView));
-            }
-            else {
-                //TakingPicture(App.GetCADName(), App.GetModelPictureExportPath());
-            }
+			if (MVCNN) {
+				if (pictureIndex < VIEWCOUNT) {
+					TakingPicture(display.GetTexID(), App.GetCADName(), App.GetPictureExportPath(false));
+				}
+				else {
+					TakingPicture(display.GetTexID(), App.GetCADName(), App.GetModelPictureExportPath());
+				}
+			}
+			else {
+				if (pictureIndex < VIEWCOUNT * 2) {
+					TakingPicture(display.GetTexID(), App.GetCADName(), App.GetPictureExportPath(isMBDView));
+				}
+				else {
+					TakingPicture(display.GetTexID(), App.GetCADName(), App.GetModelPictureExportPath());
+				}
+			}
+           
             pictureIndex++;
         }
     }

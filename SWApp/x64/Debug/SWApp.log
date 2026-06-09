@@ -1,0 +1,93 @@
+﻿  Application.cpp
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1188,40): warning C4267: “=”: 从“size_t”转换到“long”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1625,75): warning C4305: “参数”: 从“double”到“float”截断
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1628,76): warning C4305: “参数”: 从“double”到“float”截断
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1631,76): warning C4305: “参数”: 从“double”到“float”截断
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1637,76): warning C4305: “参数”: 从“double”到“float”截断
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1640,75): warning C4305: “参数”: 从“double”到“float”截断
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1643,75): warning C4305: “参数”: 从“double”到“float”截断
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1646,75): warning C4305: “参数”: 从“double”到“float”截断
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1720,4): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1896,87): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1899,84): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1910,75): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+  main.cpp
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\minwindef.h(130,1): warning C4005: “APIENTRY”: 宏重定义
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\vendor\GLFW\include\GLFW\glfw3.h(123): message : 参见“APIENTRY”的前一个定义
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1e3 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1e4 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1e6 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1e7 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1e9 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1eb 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1ec 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1ed 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1ef 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1f1 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1f3 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1f4 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1f5 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1f6 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1fc 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1fd 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x1fe 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x200 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x209 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Shader.h(1,1): warning C4828: 文件包含在偏移 0x20a 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Model.h(39,45): warning C4805: “==”: 在操作中将类型“bool”与类型“const T”混合不安全
+          with
+          [
+              T=float
+          ]
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Model.h(39,55): warning C4805: “==”: 在操作中将类型“bool”与类型“const T”混合不安全
+          with
+          [
+              T=float
+          ]
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(1,1): warning C4828: 文件包含在偏移 0x172 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(1,1): warning C4828: 文件包含在偏移 0x174 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(1,1): warning C4828: 文件包含在偏移 0x176 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(1,1): warning C4828: 文件包含在偏移 0x17b 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(1,1): warning C4828: 文件包含在偏移 0x17c 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(1,1): warning C4828: 文件包含在偏移 0x17d 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(1,1): warning C4828: 文件包含在偏移 0x17e 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(1,1): warning C4828: 文件包含在偏移 0x188 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(1,1): warning C4828: 文件包含在偏移 0x189 处开始的字符，该字符在当前源字符集中无效(代码页 65001)。
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(6,1): warning C4099: “Texture”: 类型名称以前使用“struct”现在使用的是“class”
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Texture.h(5): message : 参见“Texture”的声明
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(209,19): warning C4244: “初始化”: 从“double”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(492,74): warning C4267: “参数”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(627,10): warning C4244: “初始化”: 从“T”转换到“int”，可能丢失数据
+          with
+          [
+              T=float
+          ]
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(628,10): warning C4244: “初始化”: 从“T”转换到“int”，可能丢失数据
+          with
+          [
+              T=float
+          ]
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(714,25): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(769,52): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(779,36): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(840,52): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(850,36): warning C4267: “初始化”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(1001,47): warning C4267: “+=”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(1056,47): warning C4267: “+=”: 从“size_t”转换到“int”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2075,37): warning C4244: “参数”: 从“unsigned int”转换到“float”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2076,38): warning C4244: “参数”: 从“unsigned int”转换到“float”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2138,43): warning C4312: “类型强制转换”: 从“GLuint”转换到更大的“GLuint *”
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2138,66): warning C4244: “参数”: 从“unsigned int”转换到“float”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2138,52): warning C4244: “参数”: 从“unsigned int”转换到“float”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2279,44): warning C4312: “类型强制转换”: 从“GLuint”转换到更大的“GLuint *”
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2286,62): warning C4312: “类型强制转换”: 从“GLuint”转换到更大的“GLuint *”
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2314,55): warning C4312: “类型强制转换”: 从“GLuint”转换到更大的“GLuint *”
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2319,81): warning C4312: “类型强制转换”: 从“GLuint”转换到更大的“GLuint *”
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2342,43): warning C4244: “参数”: 从“unsigned int”转换到“float”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2342,33): warning C4244: “参数”: 从“unsigned int”转换到“float”，可能丢失数据
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(2380,2): warning C4551: 缺少参数列表的函数调用
+  正在生成代码...
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(742): warning C4715: “GetVertex2D”: 不是所有的控件路径都返回值
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\main.cpp(1337): warning C4715: “Retrival”: 不是所有的控件路径都返回值
+C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\src\Application.cpp(1445): warning C4715: “MyApp::MyApplication::ReadSafeArray”: 不是所有的控件路径都返回值
+  SWApp.vcxproj -> C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\x64\Debug\SWApp.exe

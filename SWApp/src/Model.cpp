@@ -18,6 +18,10 @@ Model::Model(std::string path, float* angleList)
 	directory = path.substr(0, path.find_last_of('/'));
 	processNode(scene->mRootNode, scene);
 	//SetPosition();
+	BoxVertex gg = GetBoxVertex();
+	minBoxVertexForCompare = gg.MinVertex;
+	maxBoxVertexForCompare = gg.MaxVertex;
+	massCenterForCompare = (minBoxVertexForCompare + maxBoxVertexForCompare) / 2.0f;
 }
 
 
@@ -250,7 +254,7 @@ glm::mat4 Model::MatrixLerp(glm::mat4 x, glm::mat4 y, float t)
 
 bool Model::IsMoreThanVec3(glm::vec3 v1, glm::vec3 v2)
 {
-	return (v1.x > v2.x) * (v1.y > v2.y) * (v1.z > v2.z);
+	return ((v1.x > v2.x) + (v1.y > v2.y) + (v1.z > v2.z));
 }
 
 glm::vec3 Model::GetVertex3D(glm::vec2 p, int i, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex)
@@ -293,7 +297,7 @@ glm::vec3 Model::GetNormal(int i)
 
 void Model::ProcessNormal(std::vector<Vertex>& vertices)
 {
-	std::map<VertexKey, glm::vec3> vlist;
+	std::unordered_map<VertexKey, glm::vec3> vlist;
 	VertexKey vk;
 	for (const Vertex& vertex : vertices) {		
 		vk.v = vertex.Position;
@@ -376,7 +380,7 @@ BorderVertexList Model::GetBorderVertexList(glm::vec3 minBoxVertex, glm::vec3 ma
 	glm::vec3 maxBorderPosition = MassCenter + (maxBoxVertex - MassCenter) * clampBorder;
 	glm::vec3 minBorderPosition = MassCenter + (minBoxVertex - MassCenter) * clampBorder;
 	
-	std::map<VertexKey, int> vlist;
+	std::unordered_map<VertexKey, int> vlist;
 	for (auto mesh : meshes) {
 		for (auto vertex : mesh.vertices) {
 			VertexKey vk;
@@ -417,8 +421,12 @@ BoxVertex Model::GetBoxVertex()
 	glm::vec3 maxBoxVertex = meshes[0].vertices[0].Position;
 	for (auto mesh : meshes) {
 		for (auto vertex : mesh.vertices) {
-			minBoxVertex = IsMoreThanVec3(minBoxVertex, vertex.Position) ? vertex.Position : minBoxVertex;
-			maxBoxVertex = IsMoreThanVec3(vertex.Position, maxBoxVertex) ? vertex.Position : maxBoxVertex;
+			minBoxVertex.x = minBoxVertex.x < vertex.Position.x ? minBoxVertex.x : vertex.Position.x;
+			minBoxVertex.y = minBoxVertex.y < vertex.Position.y ? minBoxVertex.y : vertex.Position.y;
+			minBoxVertex.z = minBoxVertex.z < vertex.Position.z ? minBoxVertex.z : vertex.Position.z;
+			maxBoxVertex.x = maxBoxVertex.x > vertex.Position.x ? maxBoxVertex.x : vertex.Position.x;
+			maxBoxVertex.y = maxBoxVertex.y > vertex.Position.y ? maxBoxVertex.y : vertex.Position.y;
+			maxBoxVertex.z = maxBoxVertex.z > vertex.Position.z ? maxBoxVertex.z : vertex.Position.z;
 		}
 	}
 	result.MinVertex = minBoxVertex;
@@ -429,7 +437,7 @@ BoxVertex Model::GetBoxVertex()
 std::vector<glm::vec3> Model::GetVertexList()
 {
 	std::vector<glm::vec3> result;
-	std::map<VertexKey, int> vlist;
+	std::unordered_map<VertexKey, int> vlist;
 	for (auto mesh : meshes) {
 		for (auto vertex : mesh.vertices) {
 			VertexKey vk;

@@ -5,32 +5,49 @@
 #include "GL/glew.h"
 #include <map>
 
-class VertexKey //用于代替glm::vec3作为map的key，其中重载了操作符<
+// class VertexKey //用于代替glm::vec3作为map的key，其中重载了操作符<
+// {
+// public:
+// 	glm::vec3 v;
+// 	bool operator < (const VertexKey& vk) const
+// 	{
+// 		return v.x < vk.v.x ? true : (v.x > vk.v.x ? false : (v.y < vk.v.y ? true : (v.y > vk.v.y ? false : (v.z < vk.v.z))));
+// 		//if (v.x < vk.v.x) {
+// 		//	return true;
+// 		//}
+// 		//else if (v.x > vk.v.x) {
+// 		//	return false;
+// 		//}
+// 		//else {
+// 		//	if (v.y < vk.v.y) {
+// 		//		return true;
+// 		//	}
+// 		//	else if (v.y > vk.v.y) {
+// 		//		return false;
+// 		//	}
+// 		//	else {
+// 		//		return v.z < vk.v.z;
+// 		//	}
+// 		//}
+// 	}
+// };
+struct VertexKey //用于代替glm::vec3作为map的key，其中重载了操作符<
 {
-public:
 	glm::vec3 v;
-	bool operator < (const VertexKey& vk) const
+	bool operator == (const VertexKey& vk) const
 	{
-		return v.x < vk.v.x ? true : (v.x > vk.v.x ? false : (v.y < vk.v.y ? true : (v.y > vk.v.y ? false : (v.z < vk.v.z))));
-		//if (v.x < vk.v.x) {
-		//	return true;
-		//}
-		//else if (v.x > vk.v.x) {
-		//	return false;
-		//}
-		//else {
-		//	if (v.y < vk.v.y) {
-		//		return true;
-		//	}
-		//	else if (v.y > vk.v.y) {
-		//		return false;
-		//	}
-		//	else {
-		//		return v.z < vk.v.z;
-		//	}
-		//}
+		return v.x == vk.v.x && v.y == vk.v.y == v.z == vk.v.z;
 	}
 };
+namespace std {
+	template<>
+	class hash<VertexKey> {
+	public:
+		size_t operator () (const VertexKey& vk) const {
+			return hash<float>()(vk.v.x) ^ hash<float>()(vk.v.y) ^ hash<float>()(vk.v.z);
+		}
+	};
+}
 
 struct BorderVertexList {
 	std::vector<glm::vec3> VertexList[6];//前后左右上下
@@ -64,6 +81,12 @@ private:
 	glm::vec3 GetNormal(int i);
 	void ProcessNormal(std::vector<Vertex>& vertices);
 
+	/////////////////用于算法比较//////////
+	glm::vec3 massCenterForCompare;
+	glm::vec3 minBoxVertexForCompare;
+	glm::vec3 maxBoxVertexForCompare;
+	/////////////////////////////////////////
+
 public:
 	Model(std::string path, float* angleList);
 	Model(std::vector<glm::vec2>& vertexList, int index, glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex, glm::vec3 massCenter);
@@ -83,4 +106,10 @@ public:
 	BorderVertexList GetBorderVertexList(glm::vec3 minBoxVertex, glm::vec3 maxBoxVertex, glm::vec3 MassCenter);
 	BoxVertex GetBoxVertex();
 	std::vector<glm::vec3> GetVertexList();
+
+	/////////////////用于算法比较//////////
+	inline glm::vec3& GetMassCenterForCompare() { return massCenterForCompare; }
+	inline glm::vec3& GetMinBoxForCompare() { return minBoxVertexForCompare; };
+	inline glm::vec3& GetMaxBoxForCompare() { return maxBoxVertexForCompare; };
+	/////////////////////////////////////////
 };

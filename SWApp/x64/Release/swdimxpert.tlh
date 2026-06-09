@@ -1,0 +1,2140 @@
+﻿// Created by Microsoft (R) C/C++ Compiler Version 14.29.30152.0 (47e1785b).
+//
+// C:\Users\PLY\Desktop\Files\Projects\SWApp\SWApp\SWApp\x64\Release\swdimxpert.tlh
+//
+// C++ source equivalent of type library swdimxpert.tlb
+// compiler-generated file created 04/13/24 at 11:58:59 - DO NOT EDIT!
+
+#pragma once
+#pragma pack(push, 8)
+
+#include <comdef.h>
+
+//
+// Forward references and typedefs
+//
+
+struct __declspec(uuid("582d0d5b-ff58-42cd-8968-a8a001a52454"))
+/* LIBID */ __SwDimXpert;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd203"))
+/* dual interface */ IDimXpertPart;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd205"))
+/* dual interface */ IDimXpertFeature;
+enum swDimXpertFeatureType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd207"))
+/* dual interface */ IDimXpertAnnotation;
+enum swDimXpertAnnotationType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd229"))
+/* dual interface */ IDimXpertBlockTolerances;
+enum swDimXpertBlockToleranceType_e;
+enum swDimXpertISO2768PartType_e;
+struct __declspec(uuid("e798337f-d657-47cf-aba6-062906a2be38"))
+/* dual interface */ IDimXpertAutoDimSchemeOption;
+struct __declspec(uuid("a69fe92a-f962-46d0-9a23-5ebdbf8bcc33"))
+/* dual interface */ IDimXpertDimensionOption;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd225"))
+/* dual interface */ IDimXpertPlaneFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd22f"))
+/* dual interface */ IDimXpertDatum;
+enum swDimXpertFeatureFilters_e;
+enum swDimXpertAutoDimSchemePartType_e;
+enum swDimXpertAutoDimSchemeToleranceType_e;
+enum swDimXpertAutoDimSchemePatternType_e;
+enum swDimXpertFeatureSelectorOption_e;
+enum swDimXpertGtolType_e;
+enum swDimXpertCombineAnnotation_e;
+struct /* coclass */ DimXpertPart;
+struct /* coclass */ DimXpertFeature;
+struct /* coclass */ DimXpertAnnotation;
+struct /* coclass */ DimXpertPlaneFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd217"))
+/* dual interface */ IDimXpertCylinderFeature;
+struct /* coclass */ DimXpertCylinderFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd215"))
+/* dual interface */ IDimXpertConeFeature;
+struct /* coclass */ DimXpertConeFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd219"))
+/* dual interface */ IDimXpertExtrudeFeature;
+struct /* coclass */ DimXpertExtrudeFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd21b"))
+/* dual interface */ IDimXpertFilletFeature;
+struct /* coclass */ DimXpertFilletFeature;
+enum swDimXpertChamferType_e;
+enum swDimXpertChamferAngleType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd20b"))
+/* dual interface */ IDimXpertChamferFeature;
+struct /* coclass */ DimXpertChamferFeature;
+enum swDimXpertCompoundHoleType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd20f"))
+/* dual interface */ IDimXpertCompoundHoleFeature;
+struct /* coclass */ DimXpertCompoundHoleFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd213"))
+/* dual interface */ IDimXpertCompoundWidthFeature;
+struct /* coclass */ DimXpertCompoundWidthFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd211"))
+/* dual interface */ IDimXpertCompoundNotchFeature;
+struct /* coclass */ DimXpertCompoundNotchFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd20d"))
+/* dual interface */ IDimXpertCompoundClosedSlot3DFeature;
+struct /* coclass */ DimXpertCompoundClosedSlot3DFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd221"))
+/* dual interface */ IDimXpertIntersectPointFeature;
+struct /* coclass */ DimXpertIntersectPointFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd21d"))
+/* dual interface */ IDimXpertIntersectLineFeature;
+struct /* coclass */ DimXpertIntersectLineFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd227"))
+/* dual interface */ IDimXpertIntersectCircleFeature;
+struct /* coclass */ DimXpertIntersectCircleFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd21f"))
+/* dual interface */ IDimXpertIntersectPlaneFeature;
+struct /* coclass */ DimXpertIntersectPlaneFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd223"))
+/* dual interface */ IDimXpertPatternFeature;
+struct /* coclass */ DimXpertPatternFeature;
+struct /* coclass */ DimXpertBlockTolerances;
+enum swDimXpertMaterialConditionModifier_e;
+struct /* coclass */ DimXpertDatum;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd231"))
+/* dual interface */ IDimXpertTolerance;
+struct /* coclass */ DimXpertTolerance;
+enum swDimXpertPositionZoneType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd233"))
+/* dual interface */ IDimXpertPositionTolerance;
+struct /* coclass */ DimXpertPositionTolerance;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd235"))
+/* dual interface */ IDimXpertCompositePositionTolerance;
+struct /* coclass */ DimXpertCompositePositionTolerance;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd237"))
+/* dual interface */ IDimXpertConcentricityTolerance;
+struct /* coclass */ DimXpertConcentricityTolerance;
+enum swDimXpertOrientationZoneType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd239"))
+/* dual interface */ IDimXpertOrientationTolerance;
+struct /* coclass */ DimXpertOrientationTolerance;
+enum swDimXpertStraightnessZoneType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd23b"))
+/* dual interface */ IDimXpertStraightnessTolerance;
+struct /* coclass */ DimXpertStraightnessTolerance;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd23d"))
+/* dual interface */ IDimXpertSymmetryTolerance;
+struct /* coclass */ DimXpertSymmetryTolerance;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd23f"))
+/* dual interface */ IDimXpertLineProfileTolerance;
+struct /* coclass */ DimXpertLineProfileTolerance;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd241"))
+/* dual interface */ IDimXpertCompositeLineProfileTolerance;
+struct /* coclass */ DimXpertCompositeLineProfileTolerance;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd243"))
+/* dual interface */ IDimXpertSurfaceProfileTolerance;
+struct /* coclass */ DimXpertSurfaceProfileTolerance;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd245"))
+/* dual interface */ IDimXpertCompositeSurfaceProfileTolerance;
+struct /* coclass */ DimXpertCompositeSurfaceProfileTolerance;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd247"))
+/* dual interface */ IDimXpertFlatnessTolerance;
+struct /* coclass */ DimXpertFlatnessTolerance;
+enum swDimXpertDimensionToleranceType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd22b"))
+/* dual interface */ IDimXpertDimensionTolerance;
+struct /* coclass */ DimXpertDimensionTolerance;
+enum swDimXpertDistanceFosUsage_e;
+enum swDimXpertPatternTreatmentType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd22d"))
+/* dual interface */ IDimXpertDistanceBetweenDimTol;
+struct /* coclass */ DimXpertDistanceBetweenDimTol;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd249"))
+/* dual interface */ IDimXpertCompositeDistanceBetweenDimTol;
+struct /* coclass */ DimXpertCompositeDistanceBetweenDimTol;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd24b"))
+/* dual interface */ IDimXpertAngleBetweenDimTol;
+struct /* coclass */ DimXpertAngleBetweenDimTol;
+enum swDimXpertChamferDimensionType_e;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd24d"))
+/* dual interface */ IDimXpertChamferDimTol;
+struct /* coclass */ DimXpertChamferDimTol;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd24f"))
+/* dual interface */ IDimXpertCounterBoreDimTol;
+struct /* coclass */ DimXpertCounterBoreDimTol;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd251"))
+/* dual interface */ IDimXpertCounterSinkAngleDimTol;
+struct /* coclass */ DimXpertCounterSinkAngleDimTol;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd253"))
+/* dual interface */ IDimXpertCounterSinkDiameterDimTol;
+struct /* coclass */ DimXpertCounterSinkDiameterDimTol;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd255"))
+/* dual interface */ IDimXpertDepthDimTol;
+struct /* coclass */ DimXpertDepthDimTol;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd257"))
+/* dual interface */ IDimXpertSphereFeature;
+struct /* coclass */ DimXpertSphereFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd259"))
+/* dual interface */ IDimXpertBestfitPlaneFeature;
+struct /* coclass */ DimXpertBestfitPlaneFeature;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd25b"))
+/* dual interface */ IDimXpertDiameterDimTol;
+struct /* coclass */ DimXpertDiameterDimTol;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd25d"))
+/* dual interface */ IDimXpertRadiusDimTol;
+struct /* coclass */ DimXpertRadiusDimTol;
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd25f"))
+/* dual interface */ IDimXpertTangencyTolerance;
+struct /* coclass */ DimXpertTangencyTolerance;
+struct /* coclass */ DimXpertAutoDimSchemeOption;
+struct /* coclass */ DimXpertDimensionOption;
+struct __declspec(uuid("6b1ba92e-6506-4c69-9b29-91c94129eb5d"))
+/* dual interface */ IDimXpertGtol;
+struct /* coclass */ DimXpertGtol;
+enum swDimXpertDimensionPositionOption_e;
+
+//
+// Smart pointer typedef declarations
+//
+
+_COM_SMARTPTR_TYPEDEF(IDimXpertBlockTolerances, __uuidof(IDimXpertBlockTolerances));
+_COM_SMARTPTR_TYPEDEF(IDimXpertAutoDimSchemeOption, __uuidof(IDimXpertAutoDimSchemeOption));
+_COM_SMARTPTR_TYPEDEF(IDimXpertDimensionOption, __uuidof(IDimXpertDimensionOption));
+_COM_SMARTPTR_TYPEDEF(IDimXpertPlaneFeature, __uuidof(IDimXpertPlaneFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertDatum, __uuidof(IDimXpertDatum));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCylinderFeature, __uuidof(IDimXpertCylinderFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertConeFeature, __uuidof(IDimXpertConeFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertFilletFeature, __uuidof(IDimXpertFilletFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertChamferFeature, __uuidof(IDimXpertChamferFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCompoundWidthFeature, __uuidof(IDimXpertCompoundWidthFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertIntersectLineFeature, __uuidof(IDimXpertIntersectLineFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertTolerance, __uuidof(IDimXpertTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertPositionTolerance, __uuidof(IDimXpertPositionTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCompositePositionTolerance, __uuidof(IDimXpertCompositePositionTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertConcentricityTolerance, __uuidof(IDimXpertConcentricityTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertOrientationTolerance, __uuidof(IDimXpertOrientationTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertStraightnessTolerance, __uuidof(IDimXpertStraightnessTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertSymmetryTolerance, __uuidof(IDimXpertSymmetryTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertLineProfileTolerance, __uuidof(IDimXpertLineProfileTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCompositeLineProfileTolerance, __uuidof(IDimXpertCompositeLineProfileTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertSurfaceProfileTolerance, __uuidof(IDimXpertSurfaceProfileTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCompositeSurfaceProfileTolerance, __uuidof(IDimXpertCompositeSurfaceProfileTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertFlatnessTolerance, __uuidof(IDimXpertFlatnessTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertDimensionTolerance, __uuidof(IDimXpertDimensionTolerance));
+_COM_SMARTPTR_TYPEDEF(IDimXpertChamferDimTol, __uuidof(IDimXpertChamferDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertSphereFeature, __uuidof(IDimXpertSphereFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertDiameterDimTol, __uuidof(IDimXpertDiameterDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertRadiusDimTol, __uuidof(IDimXpertRadiusDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertGtol, __uuidof(IDimXpertGtol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertPart, __uuidof(IDimXpertPart));
+_COM_SMARTPTR_TYPEDEF(IDimXpertFeature, __uuidof(IDimXpertFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertAnnotation, __uuidof(IDimXpertAnnotation));
+_COM_SMARTPTR_TYPEDEF(IDimXpertExtrudeFeature, __uuidof(IDimXpertExtrudeFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCompoundHoleFeature, __uuidof(IDimXpertCompoundHoleFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCompoundNotchFeature, __uuidof(IDimXpertCompoundNotchFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCompoundClosedSlot3DFeature, __uuidof(IDimXpertCompoundClosedSlot3DFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertIntersectPointFeature, __uuidof(IDimXpertIntersectPointFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertIntersectCircleFeature, __uuidof(IDimXpertIntersectCircleFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertIntersectPlaneFeature, __uuidof(IDimXpertIntersectPlaneFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertPatternFeature, __uuidof(IDimXpertPatternFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertDistanceBetweenDimTol, __uuidof(IDimXpertDistanceBetweenDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCompositeDistanceBetweenDimTol, __uuidof(IDimXpertCompositeDistanceBetweenDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertAngleBetweenDimTol, __uuidof(IDimXpertAngleBetweenDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCounterBoreDimTol, __uuidof(IDimXpertCounterBoreDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCounterSinkAngleDimTol, __uuidof(IDimXpertCounterSinkAngleDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertCounterSinkDiameterDimTol, __uuidof(IDimXpertCounterSinkDiameterDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertDepthDimTol, __uuidof(IDimXpertDepthDimTol));
+_COM_SMARTPTR_TYPEDEF(IDimXpertBestfitPlaneFeature, __uuidof(IDimXpertBestfitPlaneFeature));
+_COM_SMARTPTR_TYPEDEF(IDimXpertTangencyTolerance, __uuidof(IDimXpertTangencyTolerance));
+
+//
+// Type library items
+//
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f0"))
+swDimXpertFeatureType_e
+{
+    swDimXpertFeatureType_unknown = 0,
+    swDimXpertFeature_Plane = 1,
+    swDimXpertFeature_Cylinder = 2,
+    swDimXpertFeature_Cone = 3,
+    swDimXpertFeature_Extrude = 4,
+    swDimXpertFeature_Fillet = 5,
+    swDimXpertFeature_Chamfer = 6,
+    swDimXpertFeature_CompoundHole = 7,
+    swDimXpertFeature_CompoundWidth = 8,
+    swDimXpertFeature_CompoundNotch = 9,
+    swDimXpertFeature_CompoundClosedSlot3D = 10,
+    swDimXpertFeature_IntersectPoint = 11,
+    swDimXpertFeature_IntersectLine = 12,
+    swDimXpertFeature_IntersectCircle = 13,
+    swDimXpertFeature_IntersectPlane = 14,
+    swDimXpertFeature_Pattern = 15,
+    swDimXpertFeature_Sphere = 16,
+    swDimXpertFeature_BestfitPlane = 17,
+    swDimXpertFeature_Surface = 18
+};
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f1"))
+swDimXpertAnnotationType_e
+{
+    swDimXpertAnnotationType_unknown = 0,
+    swDimXpertDimTol_DistanceBetween = 101,
+    swDimXpertDimTol_CounterBore = 102,
+    swDimXpertDimTol_Depth = 103,
+    swDimXpertDimTol_CounterSinkDiameter = 104,
+    swDimXpertDimTol_ChamferDimension = 105,
+    swDimXpertDimTol_AngleBetween = 106,
+    swDimXpertDimTol_CounterSinkAngle = 107,
+    swDimXpertDimTol_ConeAngle = 108,
+    swDimXpertDimTol_Diameter = 109,
+    swDimXpertDimTol_Length = 110,
+    swDimXpertDimTol_Radius = 111,
+    swDimXpertDimTol_Width = 112,
+    swDimXpertDimTol_CompositeDistanceBetween = 113,
+    swDimXpertDimTol_PatternAngleBetween = 114,
+    swDimXpertDatum = 150,
+    swDimXpertGeoTol_Position = 201,
+    swDimXpertGeoTol_CompositePosition = 202,
+    swDimXpertGeoTol_Symmetry = 203,
+    swDimXpertGeoTol_Concentricity = 204,
+    swDimXpertGeoTol_LineProfile = 205,
+    swDimXpertGeoTol_CompositeLineProfile = 206,
+    swDimXpertGeoTol_SurfaceProfile = 207,
+    swDimXpertGeoTol_CompositeSurfaceProfile = 208,
+    swDimXpertGeoTol_Angularity = 210,
+    swDimXpertGeoTol_Parallelism = 211,
+    swDimXpertGeoTol_Perpendicularity = 212,
+    swDimXpertGeoTol_TotalRunout = 213,
+    swDimXpertGeoTol_CircularRunout = 214,
+    swDimXpertGeoTol_Flatness = 215,
+    swDimXpertGeoTol_Circularity = 216,
+    swDimXpertGeoTol_Cylindricity = 217,
+    swDimXpertGeoTol_Straightness = 218,
+    swDimXpertGeoTol_Tangency = 219
+};
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f5"))
+swDimXpertBlockToleranceType_e
+{
+    swDimXpertBlockToleranceType_unknown = 0,
+    swDimXpertBlockToleranceType_ASMEInch = 1,
+    swDimXpertBlockToleranceType_ISO2768 = 2
+};
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f6"))
+swDimXpertISO2768PartType_e
+{
+    swDimXpertISO2768PartType_unknown = 0,
+    swDimXpertISO2768PartType_Fine = 1,
+    swDimXpertISO2768PartType_Medium = 2,
+    swDimXpertISO2768PartType_Coarse = 3,
+    swDimXpertISO2768PartType_VeryCoarse = 4
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd229"))
+IDimXpertBlockTolerances : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Type (
+        /*[out,retval]*/ enum swDimXpertBlockToleranceType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetISO2768PartType (
+        /*[in,out]*/ enum swDimXpertISO2768PartType_e * Type,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetToleranceValues (
+        /*[in,out]*/ double * Linear1,
+        /*[in,out]*/ long * Linear1Prec,
+        /*[in,out]*/ double * Linear2,
+        /*[in,out]*/ long * Linear2Prec,
+        /*[in,out]*/ double * Linear3,
+        /*[in,out]*/ long * Linear3Prec,
+        /*[in,out]*/ double * Angular,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("e798337f-d657-47cf-aba6-062906a2be38"))
+IDimXpertAutoDimSchemeOption : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_PartType (
+        /*[out,retval]*/ long * Type ) = 0;
+      virtual HRESULT __stdcall put_PartType (
+        /*[in]*/ long Type ) = 0;
+      virtual HRESULT __stdcall get_ToleranceType (
+        /*[out,retval]*/ long * Type ) = 0;
+      virtual HRESULT __stdcall put_ToleranceType (
+        /*[in]*/ long Type ) = 0;
+      virtual HRESULT __stdcall get_PatternType (
+        /*[out,retval]*/ long * Type ) = 0;
+      virtual HRESULT __stdcall put_PatternType (
+        /*[in]*/ long Type ) = 0;
+      virtual HRESULT __stdcall get_PolarPatternHoleCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall put_PolarPatternHoleCount (
+        /*[in]*/ long Count ) = 0;
+      virtual HRESULT __stdcall get_ScopeAllFeature (
+        /*[out,retval]*/ VARIANT_BOOL * AllFeatureFlag ) = 0;
+      virtual HRESULT __stdcall put_ScopeAllFeature (
+        /*[in]*/ VARIANT_BOOL AllFeatureFlag ) = 0;
+      virtual HRESULT __stdcall get_FeatureFilters (
+        /*[out,retval]*/ long * FeatureFilters ) = 0;
+      virtual HRESULT __stdcall put_FeatureFilters (
+        /*[in]*/ long FeatureFilters ) = 0;
+};
+
+struct __declspec(uuid("a69fe92a-f962-46d0-9a23-5ebdbf8bcc33"))
+IDimXpertDimensionOption : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_TextPosition (
+        /*[out,retval]*/ VARIANT * Option ) = 0;
+      virtual HRESULT __stdcall put_TextPosition (
+        /*[in]*/ VARIANT Option ) = 0;
+      virtual HRESULT __stdcall get_DimensionPositionOption (
+        /*[out,retval]*/ long * Option ) = 0;
+      virtual HRESULT __stdcall put_DimensionPositionOption (
+        /*[in]*/ long Option ) = 0;
+      virtual HRESULT __stdcall get_FeatureSelectorOptions (
+        /*[out,retval]*/ VARIANT * Option ) = 0;
+      virtual HRESULT __stdcall put_FeatureSelectorOptions (
+        /*[in]*/ VARIANT Option ) = 0;
+      virtual HRESULT __stdcall get_DatumLength (
+        /*[out,retval]*/ double * Option ) = 0;
+      virtual HRESULT __stdcall put_DatumLength (
+        /*[in]*/ double Option ) = 0;
+      virtual HRESULT __stdcall get_DimensionPositionOption2 (
+        /*[out,retval]*/ long * Option ) = 0;
+      virtual HRESULT __stdcall put_DimensionPositionOption2 (
+        /*[in]*/ long Option ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd225"))
+IDimXpertPlaneFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetNominalPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd22f"))
+IDimXpertDatum : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Identifier (
+        /*[out,retval]*/ BSTR * Retval ) = 0;
+};
+
+enum __declspec(uuid("1bcb40ee-98c7-4ac5-8036-fc143db681ec"))
+swDimXpertFeatureFilters_e
+{
+    swDimXpertFeatureFilters_Plane = 1,
+    swDimXpertFeatureFilters_Surface = 2,
+    swDimXpertFeatureFilters_Cone = 4,
+    swDimXpertFeatureFilters_Cylinder = 8,
+    swDimXpertFeatureFilters_Boss = 16,
+    swDimXpertFeatureFilters_Fillet = 32,
+    swDimXpertFeatureFilters_Chamfer = 64,
+    swDimXpertFeatureFilters_SimpleHole = 128,
+    swDimXpertFeatureFilters_Counterbore = 256,
+    swDimXpertFeatureFilters_Countersink = 512,
+    swDimXpertFeatureFilters_Slot = 1024,
+    swDimXpertFeatureFilters_Notch = 2048,
+    swDimXpertFeatureFilters_Pocket = 4096,
+    swDimXpertFeatureFilters_SurfOfRev = 8192,
+    swDimXpertFeatureFilters_Torus = 16384,
+    swDimXpertFeatureFilters_CompoundHole = 32768
+};
+
+enum __declspec(uuid("8080e9f5-6f23-4bff-ab43-935dc714e5b8"))
+swDimXpertAutoDimSchemePartType_e
+{
+    swDimXpertAutoDimSchemePartType_Prismatic = 0,
+    swDimXpertAutoDimSchemePartType_Turned = 1
+};
+
+enum __declspec(uuid("d1286be1-292e-488f-ad93-c73bbe02e03d"))
+swDimXpertAutoDimSchemeToleranceType_e
+{
+    swDimXpertAutoDimSchemeToleranceType_PlusMinus = 0,
+    swDimXpertAutoDimSchemeToleranceType_Geometric = 1
+};
+
+enum __declspec(uuid("18a59539-ba17-4cd0-926f-e75d4722233b"))
+swDimXpertAutoDimSchemePatternType_e
+{
+    swDimXpertAutoDimSchemePatternType_Linear = 0,
+    swDimXpertAutoDimSchemePatternType_Polar = 1
+};
+
+enum __declspec(uuid("8bc8a72d-1d06-41a8-b44d-9e7db5d94a87"))
+swDimXpertFeatureSelectorOption_e
+{
+    swDimXpertFeatureSelectorOption_Default = -1,
+    swDimXpertFeatureSelectorOption_Plane = 0,
+    swDimXpertFeatureSelectorOption_Cylinder = 1,
+    swDimXpertFeatureSelectorOption_Sphere = 2,
+    swDimXpertFeatureSelectorOption_Freeform = 3,
+    swDimXpertFeatureSelectorOption_Cone = 4,
+    swDimXpertFeatureSelectorOption_SimpleHole = 5,
+    swDimXpertFeatureSelectorOption_Slot = 6,
+    swDimXpertFeatureSelectorOption_Width = 7,
+    swDimXpertFeatureSelectorOption_Boss = 8,
+    swDimXpertFeatureSelectorOption_Tab = 9,
+    swDimXpertFeatureSelectorOption_Fillet = 10,
+    swDimXpertFeatureSelectorOption_Chamfer = 11,
+    swDimXpertFeatureSelectorOption_ConicalHole = 12,
+    swDimXpertFeatureSelectorOption_Pocket = 13,
+    swDimXpertFeatureSelectorOption_Notch = 14,
+    swDimXpertFeatureSelectorOption_Extrude = 15,
+    swDimXpertFeatureSelectorOption_SplitPlane = 16,
+    swDimXpertFeatureSelectorOption_SplitCylinder = 17,
+    swDimXpertFeatureSelectorOption_CntrBore = 18,
+    swDimXpertFeatureSelectorOption_CntrSink = 19,
+    swDimXpertFeatureSelectorOption_CompoundHole = 20,
+    swDimXpertFeatureSelectorOption_HolePattern = 21,
+    swDimXpertFeatureSelectorOption_Pattern = 22,
+    swDimXpertFeatureSelectorOption_MixedPattern = 23
+};
+
+enum __declspec(uuid("ae4f4747-b2f5-4935-a931-749f74f19f8f"))
+swDimXpertGtolType_e
+{
+    swDimXpertGtolType_Straightness = 0,
+    swDimXpertGtolType_Flatness = 1,
+    swDimXpertGtolType_Circularity = 2,
+    swDimXpertGtolType_Cylindricity = 3,
+    swDimXpertGtolType_SurfaceProfile = 4,
+    swDimXpertGtolType_LineProfile = 5,
+    swDimXpertGtolType_Angularity = 6,
+    swDimXpertGtolType_Perpendicularity = 7,
+    swDimXpertGtolType_Parallelism = 8,
+    swDimXpertGtolType_Position = 9,
+    swDimXpertGtolType_Symmetry = 10,
+    swDimXpertGtolType_Concentricity = 11,
+    swDimXpertGtolType_CircularRunout = 12,
+    swDimXpertGtolType_TotalRunout = 13
+};
+
+enum __declspec(uuid("5a8fe3a7-2048-4921-bd21-fa00d96970ac"))
+swDimXpertCombineAnnotation_e
+{
+    swDimXpertCombineAnnotation_swDimXpertCombineFailed = 0,
+    swDimXpertCombineAnnotation_swDimXpertCombineSucceeded = 1,
+    swDimXpertCombineAnnotation_swDimXpertBreakFailed = 2,
+    swDimXpertCombineAnnotation_swDimXpertBreakSucceeded = 3
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd204"))
+DimXpertPart;
+    // [ default ] interface IDimXpertPart
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd206"))
+DimXpertFeature;
+    // [ default ] interface IDimXpertFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd208"))
+DimXpertAnnotation;
+    // [ default ] interface IDimXpertAnnotation
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd226"))
+DimXpertPlaneFeature;
+    // [ default ] interface IDimXpertPlaneFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd217"))
+IDimXpertCylinderFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Inner (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetThread (
+        /*[in,out]*/ VARIANT_BOOL * IsThreaded,
+        /*[in,out]*/ BSTR * ThreadDesignation,
+        /*[in,out]*/ double * ThreadDepth,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalCylinder (
+        /*[in,out]*/ double * R,
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalTopPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalBottomPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd218"))
+DimXpertCylinderFeature;
+    // [ default ] interface IDimXpertCylinderFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd215"))
+IDimXpertConeFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Inner (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalCone (
+        /*[in,out]*/ double * Angle,
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalTopPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalBottomPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd216"))
+DimXpertConeFeature;
+    // [ default ] interface IDimXpertConeFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd21a"))
+DimXpertExtrudeFeature;
+    // [ default ] interface IDimXpertExtrudeFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd21b"))
+IDimXpertFilletFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Inner (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_Radius (
+        /*[out,retval]*/ double * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd21c"))
+DimXpertFilletFeature;
+    // [ default ] interface IDimXpertFilletFeature
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f2"))
+swDimXpertChamferType_e
+{
+    swDimXpertChamferType_unknown = 0,
+    swDimXpertChamferType_DistanceAngle = 1,
+    swDimXpertChamferType_DistanceDistance = 2,
+    swDimXpertChamferType_Vertex = 3
+};
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f3"))
+swDimXpertChamferAngleType_e
+{
+    swDimXpertChamferAngleType_unknown = 0,
+    swDimXpertChamferAngleType_Concave = 1,
+    swDimXpertChamferAngleType_Convex = 2
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd20b"))
+IDimXpertChamferFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_ChamferType (
+        /*[out,retval]*/ enum swDimXpertChamferType_e * Retval ) = 0;
+      virtual HRESULT __stdcall get_Distance1 (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall get_Distance2 (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall get_Angle (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall get_AngleType (
+        /*[out,retval]*/ enum swDimXpertChamferAngleType_e * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd20c"))
+DimXpertChamferFeature;
+    // [ default ] interface IDimXpertChamferFeature
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f4"))
+swDimXpertCompoundHoleType_e
+{
+    swDimXpertCompoundHoleType_unknown = 0,
+    swDimXpertCompoundHoleType_Compound = 1,
+    swDimXpertCompoundHoleType_Counterbore = 2,
+    swDimXpertCompoundHoleType_Countersink = 3,
+    swDimXpertCompoundHoleType_Simple = 4
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd210"))
+DimXpertCompoundHoleFeature;
+    // [ default ] interface IDimXpertCompoundHoleFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd213"))
+IDimXpertCompoundWidthFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Inner (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlaneFeatures (
+        /*[in,out]*/ struct IDimXpertPlaneFeature * * Plane1,
+        /*[in,out]*/ struct IDimXpertPlaneFeature * * Plane2,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalCompoundWidth (
+        /*[in,out]*/ double * Width,
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalLongitude (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd214"))
+DimXpertCompoundWidthFeature;
+    // [ default ] interface IDimXpertCompoundWidthFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd212"))
+DimXpertCompoundNotchFeature;
+    // [ default ] interface IDimXpertCompoundNotchFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd20e"))
+DimXpertCompoundClosedSlot3DFeature;
+    // [ default ] interface IDimXpertCompoundClosedSlot3DFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd222"))
+DimXpertIntersectPointFeature;
+    // [ default ] interface IDimXpertIntersectPointFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd21d"))
+IDimXpertIntersectLineFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetPlaneFeatures (
+        /*[in,out]*/ struct IDimXpertPlaneFeature * * Plane1,
+        /*[in,out]*/ struct IDimXpertPlaneFeature * * Plane2,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalLine (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd21e"))
+DimXpertIntersectLineFeature;
+    // [ default ] interface IDimXpertIntersectLineFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd228"))
+DimXpertIntersectCircleFeature;
+    // [ default ] interface IDimXpertIntersectCircleFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd220"))
+DimXpertIntersectPlaneFeature;
+    // [ default ] interface IDimXpertIntersectPlaneFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd224"))
+DimXpertPatternFeature;
+    // [ default ] interface IDimXpertPatternFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd22a"))
+DimXpertBlockTolerances;
+    // [ default ] interface IDimXpertBlockTolerances
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f7"))
+swDimXpertMaterialConditionModifier_e
+{
+    swDimXpertMaterialConditionModifier_unknown = 0,
+    swDimXpertMCM_LMC = 1,
+    swDimXpertMCM_MMC = 2,
+    swDimXpertMCM_NoMCM = 3,
+    swDimXpertMCM_RFS = 4
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd230"))
+DimXpertDatum;
+    // [ default ] interface IDimXpertDatum
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd231"))
+IDimXpertTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetPrimaryDatumCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetPrimaryDatums (
+        /*[out,retval]*/ VARIANT * Datums ) = 0;
+      virtual HRESULT __stdcall IGetPrimaryDatums (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertDatum * * Datums ) = 0;
+      virtual HRESULT __stdcall GetPrimaryDatumModifiers (
+        /*[out,retval]*/ VARIANT * Modifiers ) = 0;
+      virtual HRESULT __stdcall IGetPrimaryDatumModifiers (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Modifiers ) = 0;
+      virtual HRESULT __stdcall GetSecondaryDatumCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetSecondaryDatums (
+        /*[out,retval]*/ VARIANT * Datums ) = 0;
+      virtual HRESULT __stdcall IGetSecondaryDatums (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertDatum * * Datums ) = 0;
+      virtual HRESULT __stdcall GetSecondaryDatumModifiers (
+        /*[out,retval]*/ VARIANT * Modifiers ) = 0;
+      virtual HRESULT __stdcall IGetSecondaryDatumModifiers (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Modifiers ) = 0;
+      virtual HRESULT __stdcall GetTertiaryDatumCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetTertiaryDatums (
+        /*[out,retval]*/ VARIANT * Datums ) = 0;
+      virtual HRESULT __stdcall IGetTertiaryDatums (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertDatum * * Datums ) = 0;
+      virtual HRESULT __stdcall GetTertiaryDatumModifiers (
+        /*[out,retval]*/ VARIANT * Modifiers ) = 0;
+      virtual HRESULT __stdcall IGetTertiaryDatumModifiers (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Modifiers ) = 0;
+      virtual HRESULT __stdcall get_Tolerance (
+        /*[out,retval]*/ double * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd232"))
+DimXpertTolerance;
+    // [ default ] interface IDimXpertTolerance
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f8"))
+swDimXpertPositionZoneType_e
+{
+    swDimXpertPositionZoneType_unknown = 0,
+    swDimXpertPositionZoneType_Boundary = 1,
+    swDimXpertPositionZoneType_CylindricalPosition = 2,
+    swDimXpertPositionZoneType_PlanarPosition = 3,
+    swDimXpertPositionZoneType_RadialPositionArc = 4,
+    swDimXpertPositionZoneType_RadialPositionPlanar = 5,
+    swDimXpertPositionZoneType_SphericalPosition = 6
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd233"))
+IDimXpertPositionTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Modifier (
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Retval ) = 0;
+      virtual HRESULT __stdcall get_ZoneType (
+        /*[out,retval]*/ enum swDimXpertPositionZoneType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlanarZoneVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetProjectedZone (
+        /*[in,out]*/ VARIANT_BOOL * Enabled,
+        /*[in,out]*/ double * Value,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetMaxTolerance (
+        /*[in,out]*/ VARIANT_BOOL * IsMax,
+        /*[in,out]*/ double * Tolerance,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd234"))
+DimXpertPositionTolerance;
+    // [ default ] interface IDimXpertPositionTolerance
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd235"))
+IDimXpertCompositePositionTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Modifier (
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Retval ) = 0;
+      virtual HRESULT __stdcall get_ZoneType (
+        /*[out,retval]*/ enum swDimXpertPositionZoneType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlanarZoneVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetProjectedZone (
+        /*[in,out]*/ VARIANT_BOOL * Enabled,
+        /*[in,out]*/ double * Value,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_PrimaryInLowerTier (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_SecondaryInLowerTier (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_TertiaryInLowerTier (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_ToleranceLowerTier (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall get_ModifierLowerTier (
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetMaxTolerance (
+        /*[in,out]*/ VARIANT_BOOL * IsMax,
+        /*[in,out]*/ double * Tolerance,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetMaxToleranceLowerTier (
+        /*[in,out]*/ VARIANT_BOOL * IsMax,
+        /*[in,out]*/ double * Tolerance,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd236"))
+DimXpertCompositePositionTolerance;
+    // [ default ] interface IDimXpertCompositePositionTolerance
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd237"))
+IDimXpertConcentricityTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Modifier (
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetMaxTolerance (
+        /*[in,out]*/ VARIANT_BOOL * IsMax,
+        /*[in,out]*/ double * Tolerance,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd238"))
+DimXpertConcentricityTolerance;
+    // [ default ] interface IDimXpertConcentricityTolerance
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244f9"))
+swDimXpertOrientationZoneType_e
+{
+    swDimXpertOrientationZoneType_unknown = 0,
+    swDimXpertOrientationZoneType_Cylindrical = 1,
+    swDimXpertOrientationZoneType_Planar = 2
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd239"))
+IDimXpertOrientationTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Modifier (
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Retval ) = 0;
+      virtual HRESULT __stdcall get_ZoneType (
+        /*[out,retval]*/ enum swDimXpertOrientationZoneType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlanarZoneVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetProjectedZone (
+        /*[in,out]*/ VARIANT_BOOL * Enabled,
+        /*[in,out]*/ double * Value,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall IsTangentPlane (
+        /*[out,retval]*/ VARIANT_BOOL * TangentPlane ) = 0;
+      virtual HRESULT __stdcall GetMaxTolerance (
+        /*[in,out]*/ VARIANT_BOOL * IsMax,
+        /*[in,out]*/ double * Tolerance,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd23a"))
+DimXpertOrientationTolerance;
+    // [ default ] interface IDimXpertOrientationTolerance
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244fa"))
+swDimXpertStraightnessZoneType_e
+{
+    swDimXpertStraightnessZoneType_unknown = 0,
+    swDimXpertStraightnessZoneType_Cylindrical = 1,
+    swDimXpertStraightnessZoneType_PlanarMedian = 2,
+    swDimXpertStraightnessZoneType_Surface = 3
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd23b"))
+IDimXpertStraightnessTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Modifier (
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Retval ) = 0;
+      virtual HRESULT __stdcall get_ZoneType (
+        /*[out,retval]*/ enum swDimXpertStraightnessZoneType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlanarZoneVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetPerUnitLength (
+        /*[in,out]*/ VARIANT_BOOL * Enabled,
+        /*[in,out]*/ double * Distance,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetMaxTolerance (
+        /*[in,out]*/ VARIANT_BOOL * IsMax,
+        /*[in,out]*/ double * Tolerance,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd23c"))
+DimXpertStraightnessTolerance;
+    // [ default ] interface IDimXpertStraightnessTolerance
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd23d"))
+IDimXpertSymmetryTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Modifier (
+        /*[out,retval]*/ enum swDimXpertMaterialConditionModifier_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetZoneDirection (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetMaxTolerance (
+        /*[in,out]*/ VARIANT_BOOL * IsMax,
+        /*[in,out]*/ double * Tolerance,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd23e"))
+DimXpertSymmetryTolerance;
+    // [ default ] interface IDimXpertSymmetryTolerance
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd23f"))
+IDimXpertLineProfileTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_OuterToleranceValue (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlanarZoneVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd240"))
+DimXpertLineProfileTolerance;
+    // [ default ] interface IDimXpertLineProfileTolerance
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd241"))
+IDimXpertCompositeLineProfileTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_OuterToleranceValue (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlanarZoneVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_PrimaryInLowerTier (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_SecondaryInLowerTier (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_TertiaryInLowerTier (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_OuterToleranceValueLowerTier (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall get_ToleranceLowerTier (
+        /*[out,retval]*/ double * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd242"))
+DimXpertCompositeLineProfileTolerance;
+    // [ default ] interface IDimXpertCompositeLineProfileTolerance
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd243"))
+IDimXpertSurfaceProfileTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_OuterToleranceValue (
+        /*[out,retval]*/ double * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd244"))
+DimXpertSurfaceProfileTolerance;
+    // [ default ] interface IDimXpertSurfaceProfileTolerance
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd245"))
+IDimXpertCompositeSurfaceProfileTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_OuterToleranceValue (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall get_PrimaryInLowerTier (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_SecondaryInLowerTier (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_TertiaryInLowerTier (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_OuterToleranceValueLowerTier (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall get_ToleranceLowerTier (
+        /*[out,retval]*/ double * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd246"))
+DimXpertCompositeSurfaceProfileTolerance;
+    // [ default ] interface IDimXpertCompositeSurfaceProfileTolerance
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd247"))
+IDimXpertFlatnessTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetPerUnitArea (
+        /*[in,out]*/ VARIANT_BOOL * Enabled,
+        /*[in,out]*/ double * Length,
+        /*[in,out]*/ double * Width,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd248"))
+DimXpertFlatnessTolerance;
+    // [ default ] interface IDimXpertFlatnessTolerance
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244fb"))
+swDimXpertDimensionToleranceType_e
+{
+    swDimXpertDimensionToleranceType_unknown = 0,
+    swDimXpertDimTolType_BlockTolerance = 1,
+    swDimXpertDimTolType_BlockToleranceNoNominal = 2,
+    swDimXpertDimTolType_ISOLimitsAndFits = 3,
+    swDimXpertDimTolType_ISOLimitsAndFitsNoNominal = 4,
+    swDimXpertDimTolType_LimitDimension = 5,
+    swDimXpertDimTolType_MAXTolerance = 6,
+    swDimXpertDimTolType_MINTolerance = 7,
+    swDimXpertDimTolType_NoTolerance = 8,
+    swDimXpertDimTolType_PlusMinusDimension = 9,
+    swDimXpertDimTolType_PlusMinusNoNominal = 10
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd22b"))
+IDimXpertDimensionTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_DimensionType (
+        /*[out,retval]*/ enum swDimXpertDimensionToleranceType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalValue (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall GetUpperAndLowerLimit (
+        /*[in,out]*/ double * Upper,
+        /*[in,out]*/ double * Lower,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlusAndMinusTolerance (
+        /*[in,out]*/ double * Plus,
+        /*[in,out]*/ double * Minus,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_BlockToleranceDecimalPlaces (
+        /*[out,retval]*/ long * Retval ) = 0;
+      virtual HRESULT __stdcall get_LimitsAndFitsCode (
+        /*[out,retval]*/ BSTR * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd22c"))
+DimXpertDimensionTolerance;
+    // [ default ] interface IDimXpertDimensionTolerance
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244fe"))
+swDimXpertDistanceFosUsage_e
+{
+    swDimXpertDistanceFosUsage_unknown = 0,
+    swDimXpertDistanceFosUsage_Center = 1,
+    swDimXpertDistanceFosUsage_MaximumSide = 2,
+    swDimXpertDistanceFosUsage_MinimumSide = 3
+};
+
+enum __declspec(uuid("b687491b-cd17-4417-ae61-3165ce27c0db"))
+swDimXpertPatternTreatmentType_e
+{
+    swDimXpertPatternTreatmentType_unknown = 0,
+    swDimXpertPatternTreatmentType_CircularPattern = 1,
+    swDimXpertPatternTreatmentType_IndividualFeatures = 2
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd22e"))
+DimXpertDistanceBetweenDimTol;
+    // [ default ] interface IDimXpertDistanceBetweenDimTol
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd24a"))
+DimXpertCompositeDistanceBetweenDimTol;
+    // [ default ] interface IDimXpertCompositeDistanceBetweenDimTol
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd24c"))
+DimXpertAngleBetweenDimTol;
+    // [ default ] interface IDimXpertAngleBetweenDimTol
+
+enum __declspec(uuid("682bc8a4-6401-4cab-8832-1261227244fd"))
+swDimXpertChamferDimensionType_e
+{
+    swDimXpertChamferDimensionType_unknown = 0,
+    swDimXpertChamferDimensionType_Angle = 1,
+    swDimXpertChamferDimensionType_LinearDistance1 = 2,
+    swDimXpertChamferDimensionType_LinearDistance2 = 3
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd24d"))
+IDimXpertChamferDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_ChamferType (
+        /*[out,retval]*/ enum swDimXpertChamferDimensionType_e * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd24e"))
+DimXpertChamferDimTol;
+    // [ default ] interface IDimXpertChamferDimTol
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd250"))
+DimXpertCounterBoreDimTol;
+    // [ default ] interface IDimXpertCounterBoreDimTol
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd252"))
+DimXpertCounterSinkAngleDimTol;
+    // [ default ] interface IDimXpertCounterSinkAngleDimTol
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd254"))
+DimXpertCounterSinkDiameterDimTol;
+    // [ default ] interface IDimXpertCounterSinkDiameterDimTol
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd256"))
+DimXpertDepthDimTol;
+    // [ default ] interface IDimXpertDepthDimTol
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd257"))
+IDimXpertSphereFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Inner (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalSphere (
+        /*[in,out]*/ double * R,
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd258"))
+DimXpertSphereFeature;
+    // [ default ] interface IDimXpertSphereFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd25a"))
+DimXpertBestfitPlaneFeature;
+    // [ default ] interface IDimXpertBestfitPlaneFeature
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd25b"))
+IDimXpertDiameterDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_PatternTreatment (
+        /*[out,retval]*/ enum swDimXpertPatternTreatmentType_e * Retval ) = 0;
+      virtual HRESULT __stdcall get_IndependencyRequirement (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_EnvelopeRequirement (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd25c"))
+DimXpertDiameterDimTol;
+    // [ default ] interface IDimXpertDiameterDimTol
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd25d"))
+IDimXpertRadiusDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_PatternTreatment (
+        /*[out,retval]*/ enum swDimXpertPatternTreatmentType_e * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd25e"))
+DimXpertRadiusDimTol;
+    // [ default ] interface IDimXpertRadiusDimTol
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd260"))
+DimXpertTangencyTolerance;
+    // [ default ] interface IDimXpertTangencyTolerance
+
+struct __declspec(uuid("311637e6-7537-4cde-a0c1-d28735f945c3"))
+DimXpertAutoDimSchemeOption;
+    // [ default ] interface IDimXpertAutoDimSchemeOption
+
+struct __declspec(uuid("faa8b5ac-f46b-47c1-8a35-f8ae6a73743b"))
+DimXpertDimensionOption;
+    // [ default ] interface IDimXpertDimensionOption
+
+struct __declspec(uuid("6b1ba92e-6506-4c69-9b29-91c94129eb5d"))
+IDimXpertGtol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Annotation (
+        /*[out,retval]*/ IDispatch * * DimXpertAnnotation ) = 0;
+};
+
+struct __declspec(uuid("0134feca-dded-40db-8c3f-df9361f8863b"))
+DimXpertGtol;
+    // [ default ] interface IDimXpertGtol
+
+enum __declspec(uuid("77a520f6-ea0f-4883-8c99-d7e832cc339a"))
+swDimXpertDimensionPositionOption_e
+{
+    swDimXpertDimensionPositionOption_N = 0,
+    swDimXpertDimensionPositionOption_X = 1,
+    swDimXpertDimensionPositionOption_Y = 2,
+    swDimXpertDimensionPositionOption_Z = 3
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd203"))
+IDimXpertPart : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetFeatureCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetFeatures (
+        /*[out,retval]*/ VARIANT * Features ) = 0;
+      virtual HRESULT __stdcall IGetFeatures (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertFeature * * Features ) = 0;
+      virtual HRESULT __stdcall GetAnnotationCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetAnnotations (
+        /*[out,retval]*/ VARIANT * Annotations ) = 0;
+      virtual HRESULT __stdcall IGetAnnotations (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertAnnotation * * Annotations ) = 0;
+      virtual HRESULT __stdcall GetBlockTolerances (
+        /*[out,retval]*/ struct IDimXpertBlockTolerances * * BlockTolerances ) = 0;
+      virtual HRESULT __stdcall GetFeature (
+        /*[in]*/ BSTR Name,
+        /*[out,retval]*/ struct IDimXpertFeature * * Feature ) = 0;
+      virtual HRESULT __stdcall GetAnnotation (
+        /*[in]*/ BSTR Name,
+        /*[out,retval]*/ struct IDimXpertAnnotation * * Annotation ) = 0;
+      virtual HRESULT __stdcall get_ShowToleranceStatus (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall put_ShowToleranceStatus (
+        /*[in]*/ VARIANT_BOOL Retval ) = 0;
+      virtual HRESULT __stdcall DeleteAllTolerances (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetAutoDimSchemeOption (
+        /*[out,retval]*/ struct IDimXpertAutoDimSchemeOption * * Retval ) = 0;
+      virtual HRESULT __stdcall AutoDimensionScheme (
+        /*[in]*/ struct IDimXpertAutoDimSchemeOption * Option,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall InsertDatum (
+        /*[in]*/ struct IDimXpertDimensionOption * Option,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetDimOption (
+        /*[out,retval]*/ struct IDimXpertDimensionOption * * Retval ) = 0;
+      virtual HRESULT __stdcall InsertLocationDimension (
+        /*[in]*/ struct IDimXpertDimensionOption * Option,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall InsertSizeDimension (
+        /*[in]*/ struct IDimXpertDimensionOption * Option,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall InsertPattern (
+        /*[in]*/ struct IDimXpertDimensionOption * Option,
+        /*[in]*/ long PatternType,
+        /*[in]*/ VARIANT_BOOL FindAll,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall InsertBasicDimension (
+        /*[in]*/ struct IDimXpertDimensionOption * Option,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall InsertGtol (
+        /*[in]*/ long Type,
+        /*[out,retval]*/ struct IDimXpertAnnotation * * DimXpertAnnotation ) = 0;
+      virtual HRESULT __stdcall ImportScheme (
+        /*[in]*/ BSTR Filename,
+        /*[in]*/ BSTR ConfigurationName,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd205"))
+IDimXpertFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Name (
+        /*[out,retval]*/ BSTR * Retval ) = 0;
+      virtual HRESULT __stdcall get_Type (
+        /*[out,retval]*/ enum swDimXpertFeatureType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetAppliedFeatureCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetAppliedFeatures (
+        /*[out,retval]*/ VARIANT * Features ) = 0;
+      virtual HRESULT __stdcall IGetAppliedFeatures (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertFeature * * Features ) = 0;
+      virtual HRESULT __stdcall GetAppliedAnnotationCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetAppliedAnnotations (
+        /*[out,retval]*/ VARIANT * Annotations ) = 0;
+      virtual HRESULT __stdcall IGetAppliedAnnotations (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertAnnotation * * Annotations ) = 0;
+      virtual HRESULT __stdcall IsSuppressed (
+        /*[out,retval]*/ VARIANT_BOOL * Suppressed ) = 0;
+      virtual HRESULT __stdcall GetFaceCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetFaces (
+        /*[out,retval]*/ VARIANT * Faces ) = 0;
+      virtual HRESULT __stdcall IGetFaces (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ IDispatch * * Faces ) = 0;
+      virtual HRESULT __stdcall GetModelFeature (
+        /*[out,retval]*/ IDispatch * * Retval ) = 0;
+      virtual HRESULT __stdcall SetCombineAnnotation (
+        /*[in]*/ VARIANT_BOOL Combine,
+        /*[out,retval]*/ long * Retval ) = 0;
+      virtual HRESULT __stdcall IsCombinedAnnotation (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd207"))
+IDimXpertAnnotation : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Name (
+        /*[out,retval]*/ BSTR * Retval ) = 0;
+      virtual HRESULT __stdcall get_Type (
+        /*[out,retval]*/ enum swDimXpertAnnotationType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetAppliedAnnotationCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetAppliedAnnotations (
+        /*[out,retval]*/ VARIANT * Annotations ) = 0;
+      virtual HRESULT __stdcall IGetAppliedAnnotations (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertAnnotation * * Annotations ) = 0;
+      virtual HRESULT __stdcall IsFreeState (
+        /*[out,retval]*/ VARIANT_BOOL * FreeState ) = 0;
+      virtual HRESULT __stdcall IsStatistical (
+        /*[out,retval]*/ VARIANT_BOOL * Statistical ) = 0;
+      virtual HRESULT __stdcall IsSuppressed (
+        /*[out,retval]*/ VARIANT_BOOL * Suppressed ) = 0;
+      virtual HRESULT __stdcall IsToBeInspected (
+        /*[out,retval]*/ VARIANT_BOOL * Inspection ) = 0;
+      virtual HRESULT __stdcall get_Feature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetDisplayEntity (
+        /*[out,retval]*/ IDispatch * * Annotation ) = 0;
+      virtual HRESULT __stdcall GetModelFeature (
+        /*[out,retval]*/ IDispatch * * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd219"))
+IDimXpertExtrudeFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Blind (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetReferenceFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetBottomFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetTopBlends (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetBottomBlends (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetSubFeatureCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetSubFeatures (
+        /*[out,retval]*/ VARIANT * Features ) = 0;
+      virtual HRESULT __stdcall IGetSubFeatures (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertFeature * * Features ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd20f"))
+IDimXpertCompoundHoleFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Blind (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_CompoundHoleType (
+        /*[out,retval]*/ enum swDimXpertCompoundHoleType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetReferenceFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetBottomFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetSubFeatureCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetSubFeatures (
+        /*[out,retval]*/ VARIANT * Features ) = 0;
+      virtual HRESULT __stdcall IGetSubFeatures (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertFeature * * Features ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd211"))
+IDimXpertCompoundNotchFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Blind (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalNotch (
+        /*[in,out]*/ double * Width,
+        /*[in,out]*/ double * Length,
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[in,out]*/ double * LongitudeI,
+        /*[in,out]*/ double * LongitudeJ,
+        /*[in,out]*/ double * LongitudeK,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetTopReferenceFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetOpenSideReferenceFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlaneFeatures (
+        /*[in,out]*/ struct IDimXpertPlaneFeature * * Plane1,
+        /*[in,out]*/ struct IDimXpertPlaneFeature * * Plane2,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetBottomFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetEndFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalBottomPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd20d"))
+IDimXpertCompoundClosedSlot3DFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_Blind (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalClosedSlot (
+        /*[in,out]*/ double * Width,
+        /*[in,out]*/ double * Length,
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[in,out]*/ double * LongitudeI,
+        /*[in,out]*/ double * LongitudeJ,
+        /*[in,out]*/ double * LongitudeK,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlaneFeatures (
+        /*[in,out]*/ struct IDimXpertPlaneFeature * * Plane1,
+        /*[in,out]*/ struct IDimXpertPlaneFeature * * Plane2,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetBottomFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetEndFeatures (
+        /*[in,out]*/ struct IDimXpertFeature * * End1,
+        /*[in,out]*/ struct IDimXpertFeature * * End2,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalTopPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalBottomPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd221"))
+IDimXpertIntersectPointFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetFeatures (
+        /*[in,out]*/ struct IDimXpertFeature * * Feature1,
+        /*[in,out]*/ struct IDimXpertFeature * * Feature2,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalPoint (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd227"))
+IDimXpertIntersectCircleFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetNominalCircle (
+        /*[in,out]*/ double * R,
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlaneFeature (
+        /*[in,out]*/ struct IDimXpertPlaneFeature * * Plane,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetIntersectFeature (
+        /*[in,out]*/ struct IDimXpertFeature * * Feature,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd21f"))
+IDimXpertIntersectPlaneFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetFeatures (
+        /*[in,out]*/ struct IDimXpertFeature * * Feature1,
+        /*[in,out]*/ struct IDimXpertFeature * * Feature2,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd223"))
+IDimXpertPatternFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_PatternType (
+        /*[out,retval]*/ enum swDimXpertFeatureType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetSubFeatureCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetSubFeatures (
+        /*[out,retval]*/ VARIANT * Features ) = 0;
+      virtual HRESULT __stdcall IGetSubFeatures (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertFeature * * Features ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd22d"))
+IDimXpertDistanceBetweenDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetOriginFeature (
+        /*[in,out]*/ struct IDimXpertFeature * * Feature,
+        /*[in,out]*/ enum swDimXpertDistanceFosUsage_e * FosUsage,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetFeature (
+        /*[in,out]*/ struct IDimXpertFeature * * Feature,
+        /*[in,out]*/ enum swDimXpertDistanceFosUsage_e * FosUsage,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetDirectionVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_PatternTreatment (
+        /*[out,retval]*/ enum swDimXpertPatternTreatmentType_e * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd249"))
+IDimXpertCompositeDistanceBetweenDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetOriginFeature (
+        /*[in,out]*/ struct IDimXpertFeature * * Feature,
+        /*[in,out]*/ enum swDimXpertDistanceFosUsage_e * FosUsage,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetDirectionVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetFeature (
+        /*[in,out]*/ struct IDimXpertFeature * * Feature,
+        /*[in,out]*/ enum swDimXpertDistanceFosUsage_e * FosUsage,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetIntraFeature (
+        /*[in,out]*/ struct IDimXpertFeature * * Feature,
+        /*[in,out]*/ enum swDimXpertDistanceFosUsage_e * FosUsage,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_DimensionTypeIntraFeature (
+        /*[out,retval]*/ enum swDimXpertDimensionToleranceType_e * Retval ) = 0;
+      virtual HRESULT __stdcall GetNominalValueIntraFeature (
+        /*[out,retval]*/ double * Retval ) = 0;
+      virtual HRESULT __stdcall GetUpperAndLowerLimitIntraFeature (
+        /*[in,out]*/ double * Upper,
+        /*[in,out]*/ double * Lower,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetPlusAndMinusToleranceIntraFeature (
+        /*[in,out]*/ double * Plus,
+        /*[in,out]*/ double * Minus,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_BlockToleranceDecimalPlacesIntraFeature (
+        /*[out,retval]*/ long * Retval ) = 0;
+      virtual HRESULT __stdcall get_LimitsAndFitsCodeIntraFeature (
+        /*[out,retval]*/ BSTR * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd24b"))
+IDimXpertAngleBetweenDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_OriginFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall GetDirectionVector (
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall get_Supplement (
+        /*[out,retval]*/ VARIANT_BOOL * Supplement ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd24f"))
+IDimXpertCounterBoreDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_ReferenceFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd251"))
+IDimXpertCounterSinkAngleDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_ReferenceFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd253"))
+IDimXpertCounterSinkDiameterDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_ReferenceFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd255"))
+IDimXpertDepthDimTol : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_ReferenceFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+      virtual HRESULT __stdcall IsThreadDepth (
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd259"))
+IDimXpertBestfitPlaneFeature : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall GetNominalPlane (
+        /*[in,out]*/ double * X,
+        /*[in,out]*/ double * Y,
+        /*[in,out]*/ double * Z,
+        /*[in,out]*/ double * I,
+        /*[in,out]*/ double * J,
+        /*[in,out]*/ double * K,
+        /*[out,retval]*/ VARIANT_BOOL * Retval ) = 0;
+      virtual HRESULT __stdcall GetSubFeatureCount (
+        /*[out,retval]*/ long * Count ) = 0;
+      virtual HRESULT __stdcall GetSubFeatures (
+        /*[out,retval]*/ VARIANT * Features ) = 0;
+      virtual HRESULT __stdcall IGetSubFeatures (
+        /*[in]*/ long Count,
+        /*[out,retval]*/ struct IDimXpertFeature * * Features ) = 0;
+};
+
+struct __declspec(uuid("a7af9c2d-52e5-40f1-9d6e-c2dfb4bcd25f"))
+IDimXpertTangencyTolerance : IDispatch
+{
+    //
+    // Raw methods provided by interface
+    //
+
+      virtual HRESULT __stdcall get_OriginFeature (
+        /*[out,retval]*/ struct IDimXpertFeature * * Retval ) = 0;
+};
+
+//
+// Named GUID constants initializations
+//
+
+extern "C" const GUID __declspec(selectany) LIBID_SwDimXpert =
+    {0x582d0d5b,0xff58,0x42cd,{0x89,0x68,0xa8,0xa0,0x01,0xa5,0x24,0x54}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertBlockTolerances =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x29}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertAutoDimSchemeOption =
+    {0xe798337f,0xd657,0x47cf,{0xab,0xa6,0x06,0x29,0x06,0xa2,0xbe,0x38}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertDimensionOption =
+    {0xa69fe92a,0xf962,0x46d0,{0x9a,0x23,0x5e,0xbd,0xbf,0x8b,0xcc,0x33}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertPlaneFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x25}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertDatum =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x2f}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertPart =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x04}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x06}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertAnnotation =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x08}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertPlaneFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x26}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCylinderFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x17}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCylinderFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x18}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertConeFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x15}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertConeFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x16}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertExtrudeFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x1a}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertFilletFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x1b}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertFilletFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x1c}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertChamferFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x0b}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertChamferFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x0c}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCompoundHoleFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x10}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCompoundWidthFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x13}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCompoundWidthFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x14}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCompoundNotchFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x12}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCompoundClosedSlot3DFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x0e}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertIntersectPointFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x22}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertIntersectLineFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x1d}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertIntersectLineFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x1e}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertIntersectCircleFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x28}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertIntersectPlaneFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x20}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertPatternFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x24}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertBlockTolerances =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x2a}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertDatum =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x30}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x31}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x32}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertPositionTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x33}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertPositionTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x34}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCompositePositionTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x35}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCompositePositionTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x36}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertConcentricityTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x37}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertConcentricityTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x38}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertOrientationTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x39}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertOrientationTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x3a}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertStraightnessTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x3b}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertStraightnessTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x3c}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertSymmetryTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x3d}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertSymmetryTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x3e}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertLineProfileTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x3f}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertLineProfileTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x40}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCompositeLineProfileTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x41}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCompositeLineProfileTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x42}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertSurfaceProfileTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x43}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertSurfaceProfileTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x44}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCompositeSurfaceProfileTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x45}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCompositeSurfaceProfileTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x46}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertFlatnessTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x47}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertFlatnessTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x48}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertDimensionTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x2b}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertDimensionTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x2c}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertDistanceBetweenDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x2e}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCompositeDistanceBetweenDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x4a}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertAngleBetweenDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x4c}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertChamferDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x4d}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertChamferDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x4e}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCounterBoreDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x50}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCounterSinkAngleDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x52}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertCounterSinkDiameterDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x54}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertDepthDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x56}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertSphereFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x57}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertSphereFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x58}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertBestfitPlaneFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x5a}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertDiameterDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x5b}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertDiameterDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x5c}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertRadiusDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x5d}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertRadiusDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x5e}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertTangencyTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x60}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertAutoDimSchemeOption =
+    {0x311637e6,0x7537,0x4cde,{0xa0,0xc1,0xd2,0x87,0x35,0xf9,0x45,0xc3}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertDimensionOption =
+    {0xfaa8b5ac,0xf46b,0x47c1,{0x8a,0x35,0xf8,0xae,0x6a,0x73,0x74,0x3b}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertGtol =
+    {0x6b1ba92e,0x6506,0x4c69,{0x9b,0x29,0x91,0xc9,0x41,0x29,0xeb,0x5d}};
+extern "C" const GUID __declspec(selectany) CLSID_DimXpertGtol =
+    {0x0134feca,0xdded,0x40db,{0x8c,0x3f,0xdf,0x93,0x61,0xf8,0x86,0x3b}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertPart =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x03}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x05}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertAnnotation =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x07}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertExtrudeFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x19}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCompoundHoleFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x0f}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCompoundNotchFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x11}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCompoundClosedSlot3DFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x0d}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertIntersectPointFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x21}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertIntersectCircleFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x27}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertIntersectPlaneFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x1f}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertPatternFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x23}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertDistanceBetweenDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x2d}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCompositeDistanceBetweenDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x49}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertAngleBetweenDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x4b}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCounterBoreDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x4f}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCounterSinkAngleDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x51}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertCounterSinkDiameterDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x53}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertDepthDimTol =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x55}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertBestfitPlaneFeature =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x59}};
+extern "C" const GUID __declspec(selectany) IID_IDimXpertTangencyTolerance =
+    {0xa7af9c2d,0x52e5,0x40f1,{0x9d,0x6e,0xc2,0xdf,0xb4,0xbc,0xd2,0x5f}};
+
+#pragma pack(pop)

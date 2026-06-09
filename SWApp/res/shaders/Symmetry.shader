@@ -25,10 +25,11 @@ uniform vec3 symmetryDir;
 void main() 
 { 
 	vs_out.v_texcoord=texcoord;
-	vs_out.v_WorldNormal=model*vec4(normalize(normal*symmetryDir),0.0f);
+	vs_out.v_WorldNormal=(model*vec4(normalize(normal),0.0f))*vec4(symmetryDir,1.0f);
 	//vs_out.v_ViewNormal=u_view*model*vec4(normalize(normal),0.0f);
-	vs_out.v_WorldPosition=model*vec4(position*symmetryDir,1.0f);
-	gl_Position =u_projection*u_view*model*vec4(position*symmetryDir,1.0f); 
+	vec3 newPos = ((model*vec4(position,1.0f))*vec4(symmetryDir,1.0f)).xyz - vs_out.v_WorldNormal.xyz*0.1f;
+	vs_out.v_WorldPosition = vec4(newPos,1.0f);
+	gl_Position =u_projection*u_view*vec4(newPos,1.0f); 
 
 }
 
